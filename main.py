@@ -2,36 +2,30 @@ from class_data import data
 if __name__ == '__main__':
     import time as timer
     ##--- read-in the whole file ---
-    filename = '../nvtprodB_every100ps_500frames_0-50ns.pdb'
-    d1 = data(filename)
-    
+    filename = ''
+    anionfixfile = '../400K_corrected_lmp/com_AN_every10ps_0-10ns.dat'
+    cationfixfile = '../400K_corrected_lmp/com_CT_every10ps_0-10ns.dat'
+    anionfixfile = '../com_AN_every10ps_0-10ns.dat'
+    cationfixfile = '../com_CT_every10ps_0-10ns.dat'
+
+    ##--- timer start ---
     start = timer.perf_counter()
     
-    ##--- generate the ions ---
-    # Here are the most tricky lines as follows:
-    # The terminal atoms to knock out, the %(mod) atoms to include(key words in the " "):
-    # The numbers are the number of rows, i.e. the indices in pandas.DataFrame. 
-    # They are equal to the corresponding atomid - 1 !!! 
-    # e.g. knock out terminal [18, 781] means knock out atomid 19 and 782.
-    # index%20 == 5 means atomid%20 == 6. 
-    CT_gen_kw = [range(1, 1+10),'CT', 40, 1, [30,1171], 15, "sel[  (  (sel.index%30 <=9) & (sel.index%30>=5) ) | ( (sel.index%30>=15 ) & (sel.index%30<=24)) ]" ]
-    AN_gen_kw = [range(11, 11+400), 'AN', 1, 1, [], 15, 'sel[:]']
-    d1.readtotal( CT_gen=CT_gen_kw, AN_gen = AN_gen_kw ) 
+    d1 = data(filename)
+    d1.AN_CT_readfix(  anionfixfile, 1, cationfixfile, 40, [ [-0.02,58.5387],[-0.02,58.5387],[0.,58.5187]  ]  )
+    d1.export_ions_lmptrj('ions.lammpstrj')
     
     ##--- calcuate histograms ---
-    #hist_atom, hist_mol = d1.find_asso_AN_CT(7.8)
-    #norm_hist_hop_type = d1.hopping_types_AN()
-
-
-    stop  = timer.perf_counter()
+    norm_hist_atom, norm_hist_mol = d1.find_asso_AN_CT(7.8)
+    norm_hist_hop_type = d1.hoppingtype_AN()
     
-    ##--- save pdb files of ions for each frame ---
-    d1.export_ions_pdb('AmC2_B_every100_0-50ns_')
-    
-    ##--- output to screen ---
-    #print( hist_atom, '\n'*2, hist_mol   )
-    #print(norm_hist_hop_type )
-    #print(d1.hist_hop_type)
-    #print( d1.hist_asso_atom)
-    #print( d1.hist_asso_mol )
+    ##--- timer stop ---
+    stop = timer.perf_counter()
     print(stop-start)
+    
+    ##--- output ---
+    import numpy as np
+    fn_prefix = 'C4_0-20ns'
+    np.savetxt(    fn_prefix+'hist_asso_atom.dat', np.transpose( [norm_hist_atom[1][:-1], norm_hist_atom[0][:]] ), fmt=['%d', '%f'], header='n  P(n)'      )
+    np.savetxt(    fn_prefix+'hist_asso_mol.dat' , np.transpose( [norm_hist_mol[1][:-1] , norm_hist_mol[0][:] ] ), fmt=['%d', '%f'], header='N  P(N)'      )
+    np.savetxt(    fn_prefix+'hist_hopping.dat'  , np.transpose( [norm_hist_hop_type[1][:-1], norm_hist_hop_type[0][:] ]  ), fmt=['%d', '%f'] , header='N  P(N)'  )
