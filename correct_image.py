@@ -2,8 +2,13 @@ import numpy as np
 import re
 import pandas as pd
 
-##--- center of mass ---
-##--- for unwrapped data only ---
+##--- to correct image flags ---
+## This is for the data converted from gromacs ONLY,
+## provided that image flags are not included. 
+## This is not suitable to the lammps data generated half way.
+## One should always dump image flags when running lammps.
+## Follow our standard: dump custom id mol type q x y z ix iy iz,
+## which is in the same order to the lammps data file.
 
 def correct_image(atom_group, box):
     # box info
@@ -27,23 +32,21 @@ def correct_image(atom_group, box):
     # Each pair of ions must not span further than half box.
     # They should always stay in the same pbc image.
     # The error comes from the gmx convert or image flag reset
-    for ct in range(0, len(x)):
-        if ct == 0:
-            continue  # skip the first
+    for ct in range(1, len(x)):
         if x[ct]- x[0]> deltaX/2:
-                ix[ct] -=1
+            ix[ct] -=1
         if x[ct]- x[0] < -deltaX/2:
-                ix[ct] +=1
-        
+            ix[ct] +=1
+        #
         if y[ct]- y[0]> deltaY/2:
-                iy[ct] -=1
+            iy[ct] -=1
         if y[ct]- y[0] < -deltaY/2:
-                iy[ct] +=1
-        
+            iy[ct] +=1
+        #
         if z[ct]- z[0]> deltaZ/2:
-                iz[ct] -=1
+            iz[ct] -=1
         if z[ct]- z[0] < -deltaZ/2:
-                iz[ct] +=1
+            iz[ct] +=1
     #print(atom_group)
     return  ix.astype(int), iy.astype(int), iz.astype(int)
 
@@ -51,14 +54,11 @@ if __name__ == '__main__':
     # correct input flags
     from class_oneframe import oneframe
     from read_1_frame import read_snap
-    f = open('../Init.lammpstrj','r')
+    f = open('../400K_corrected_lmp/Init.lammpstrj','r')
     atomlist, Natom, box, time, cols, position  = read_snap(f)
     f.close()
     onef = oneframe()
     onef.load_snap(time, box, atomlist, cols)
-    
-    
-    onef.export_lmptrj('old.lammpstrj', onef.L_atom)
     #
     #
     #
@@ -83,22 +83,20 @@ if __name__ == '__main__':
     all_ions_ids = []
     for i in L_CT_mol:
         # in each molecule
-        iloc_Ter = [26,1015]
+        iloc_Ter = [20,781]
         CT_atom_ids = onef.L_atom[ onef.L_atom['mol'] == i ]['id'].values  # save in numpy array
         ##--- drop the terminal atoms and save them separately
         CT_atom_ids = np.delete(CT_atom_ids, iloc_Ter)
         #
-        reduced_ids = CT_atom_ids - CT_atom_ids[0] # reset index starting from 0
         # create an empty list for all ids of ions
         ions_ids = []
         for j in range(0, len(CT_atom_ids) ): # must use length
-            if (j%26<=5 and j%26>=1) or (j%26>=11 and j%26<=13):
+            if (j%20<=5 and j%20>=1) or (j%20>=9 and j%20<=11):
                 ions_ids.append( CT_atom_ids[j])
         # splite ions ids into single ions
         for k in range(0, Deg_poly*ions_per_mono):  # number of ions in one polymer chain
             all_ions_ids.append( ions_ids[k*Natom_ION : (k+1)*Natom_ION] )
         del CT_atom_ids
-        del reduced_ids
         del ions_ids
 
     # now update image flags and molid
@@ -119,9 +117,9 @@ if __name__ == '__main__':
         onef.L_atom.loc[onef.L_atom['id'].isin(ion), 'mol'] = N_mol+mol_counter
 
         mol_counter += 1
-        
-
-    onef.export_lmptrj('new.lammpstrj', onef.L_atom)
+    f = open('new.lammpstrj', 'w')
+    onef.export_lmptrj(f, onef.L_atom)
+    f.close()
 
 
 
