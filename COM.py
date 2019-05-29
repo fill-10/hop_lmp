@@ -5,7 +5,7 @@ import pandas as pd
 ##--- center of mass ---
 ##--- for unwrapped data only ---
 
-def COM(atom_group, box, mapping_col = 'element', ixyz=True, uxyz = False ):
+def COM(atom_group, box, mapping_col = 'element', uxyz = False ):
     mass_table = {'H':1.008, 'Li':6.94, 'B':10.81, 'C':12.011, 'N':14.007, 'O':15.999, 'F':18.998, 'Na':22.990, 'Mg':4.305, 'Al':26.982, 'Si':28.085, 'P':30.974, 'S':32.06, 'Cl':35.45, 'K':39.098, 'Br':79.904 }
     
     # box info
