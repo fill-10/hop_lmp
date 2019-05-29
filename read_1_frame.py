@@ -1,4 +1,4 @@
-def read_snap(f, start=0, dim = 3):
+def read_1_lmp(f, start=0, dim = 3):
     if start>0:
         f.seek(start)
     ###--- read controlling flags
@@ -14,8 +14,10 @@ def read_snap(f, start=0, dim = 3):
     atom_count  = 0
     col_dict = []
     # read head info
-    while 1:
-        cline = f.readline().split()
+    rawline = '\n'
+    while rawline !='':
+        rawline = f.readline()
+        cline = rawline.split()
         if cline[0] == 'ITEM:':  # control flags, find which to read
             if cline[1] == 'TIMESTEP':
                 readtime = 1
@@ -75,13 +77,14 @@ def read_snap(f, start=0, dim = 3):
             atom_count -= 1
 
         if readatom and atom_count<=0:
-            return item_atoms, Natom, item_box, item_time, col_dict, f.tell()
+            return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 if __name__ == '__main__' :
-    filename = '../first5.lammpstrj'
+    filename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
     f = open(filename, 'r')
-    atoms, Natom, box, time, col, pos = read_snap(f)
-    atoms, Natom, box, time, col, pos = read_snap(f)
+    time, Natom, box, col, atoms, pos = read_1_lmp(f)
+    time, Natom, box, col, atoms, pos = read_1_lmp(f)
     print(time)
     print(box)
     print(col)
+    print(atoms[1])

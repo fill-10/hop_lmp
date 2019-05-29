@@ -4,7 +4,9 @@ import pandas as pd
 from read_1_frame import *
 from read_1_fix import read_1_fix
 from COM import COM
+from NGP import NGP
 from pbc_dist import *
+from unwrap import unwrap
 
 ##--- define a single frame class
 class oneframe():
@@ -56,7 +58,7 @@ class oneframe():
         self.update_pbc(box)
         self.load_atoms(atoms, cols)
     #
-    def ion_gen(self, L_molid = range(401, 401+10), iontype='101', Deg_poly=40, ions_per_mono = 1, ilocL_Ter = [18,781], Natom_ION = 8, pick_cr_per_mon= "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]"):
+    def ion_gen(self, L_molid = range(401, 401+10), iontype='101', Deg_poly=40, ions_per_mono = 1, ilocL_Ter = [18,781], Natom_ION = 8, pick_cr_per_mon= "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]" , COM_map_col= 'element'):
         ##--- create an empty list for ion candidates
         L_ion = []
         ##--- Loop over all molecules
@@ -69,28 +71,26 @@ class oneframe():
             ##--- select each ion based on the input criterion(-ria)
             ##--- the eval() module runs the string and returns the results
             sel1 = eval(pick_cr_per_mon)
-
             ##--- delete the verlet (temporary) atom dataframe
             del sel
-            
             ##--- now, only the atoms in ions are selected in sel1
             ##--- split them into independent ions
             for j in range(0,Deg_poly*ions_per_mono):
                 ##--- compute center of mass for each ion
                 ## COM in this version always returns x,y,z and ix,iy,iz
-                ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz = COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], [[self.xlo, self.xhi],[self.ylo, self.yhi],[self.zlo, self.zhi]]  )
+                ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz = COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], [[self.xlo, self.xhi],[self.ylo, self.yhi],[self.zlo, self.zhi]], COM_map_col )
                 ##--- append this ion to the final list
-                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, iontype, i, ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz]  ]
-
+                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, i, iontype, ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz]  ]
             ##--- delete the temp dataframe sel1
             del sel1
         
         ##--- convert the result into pandas dataframe
-        L_ion = pd.DataFrame(L_ion, columns = ['atom', 'type', 'mol', 'x', 'y', 'z', 'ix', 'iy', 'iz'])
+        L_ion = pd.DataFrame(L_ion, columns = ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'])
         return L_ion
     
-    def read_ion(self, atoms, iontype, ionspermol=1):
-        L_ion = pd.DataFrame(atoms, columns = ['id','ux','uy','uz'])
+    def read_ion(self, atoms, iontype, ionspermol=1, dropuxyz = False):
+        L_ion = pd.DataFrame(atoms, columns = ['id','ux','uy','uz']) 
+        # The columns are from lammps 'fix' output.
         L_ion.loc[:,'ix'] = 0 
         L_ion.loc[:,'iy'] = 0 
         L_ion.loc[:,'iz'] = 0
@@ -120,7 +120,10 @@ class oneframe():
         L_ion['z'] = L_ion['uz'] - L_ion['iz']*self.deltaZ
         # L_ion.reset_index(drop=True)
         # L_ion.loc['id'] = L_ion.index+1
-        return L_ion#.drop(columns= ['ux', 'uy' ,'uz'])
+        if dropuxyz:
+            return L_ion.drop(columns= ['ux', 'uy' ,'uz'])
+        else:
+            return L_ion
 
     def find_asso(self, L_im, L_mo, r_cut, do_stat = 1, diff_L=1):
         # l_im is the mother list, bring l_mo elements into l1
@@ -214,9 +217,9 @@ class oneframe():
         N_sel = L_sel.shape[0]
         f.write('%d' %N_sel +'\n')
         f.write('ITEM: BOX BOUNDS'+' pp'*3 +'\n') # only support pbc now
-        f.write('{:.3f}    {:.3f}\n'.format(self.xlo,self.xhi) )
-        f.write('{:.3f}    {:.3f}\n'.format(self.ylo,self.yhi) )
-        f.write('{:.3f}    {:.3f}\n'.format(self.zlo,self.zhi) )
+        f.write('{:.5f}    {:.5f}\n'.format(self.xlo,self.xhi) )
+        f.write('{:.5f}    {:.5f}\n'.format(self.ylo,self.yhi) )
+        f.write('{:.5f}    {:.5f}\n'.format(self.zlo,self.zhi) )
         f.write('ITEM: ATOMS '+ ' '.join(L_sel.columns.values.astype(str)) +'\n'  )
         # write atom body
         L_sel.to_csv(f, sep=' ', float_format='%.5f', header=False, index=False)
@@ -237,71 +240,83 @@ class oneframe():
         hist_hop_type = np.histogram(asso_type, bins=[1,2,3,4,5])
 
         return hist_hop_type # not normalized
+    
+    def unwrap(self, L_ion): # L_ion is a pointer
+        L_ion['ux'], L_ion['uy'], L_ion['uz'] = unwrap(L_ion, [[self.xlo, self.xhi], [self.ylo, self.yhi], [self.zlo, self.zhi]])
+
+    def nongauss(self,L_mobile_ions,ref): # non gaussian parameter data point
+        return NGP(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
             
+
+
 ##-----------------------------
 
 if __name__ == '__main__':
     import time as timer
     ##--- read-in the whole file ---
-    filename = '../first5.lammpstrj'
-    ANfile = '../com_AN_every10ps_0-10ns.dat'
-    CTfile = '../com_CT_every10ps_0-10ns.dat'
+    filename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
+    ANfile = '../400K_corrected_lmp_B/com_AN_every10ps_0-10ns.dat'
+    CTfile = '../400K_corrected_lmp_B/com_CT_every10ps_0-10ns.dat'
+    f = open(filename, 'r')
     fa = open(ANfile, 'r')
     fc = open(CTfile, 'r')
-    ##--- read one frame ---
+    ##--- timer starts ---
     start = timer.perf_counter()
+
+    ##--- initialize a data object ---
     onef = oneframe()
-    ###--- read ions from fix file ---
-    onef.update_pbc([[-0.02,58.5387],[-0.02,58.5387],[0.,58.5187]])
-    print(onef.deltaZ)
+    ###--- write box dim manually ---
+    onef.update_pbc([[0.0,55.8983],[0.02,55.9183],[0.01,55.9083]])
+    ###--- read ions from lammps 'fix' --
     anions, Nanion, time, pos = read_1_fix(fa)
     cations, Ncations, time, pos = read_1_fix(fc)
-    
+    ###--- organize ions in to object instances ---
     onef.L_CT = onef.read_ion(cations, 2, 40)
     onef.L_AN = onef.read_ion(anions, 1, 1)
     onef.L_CT.loc[:,'mol'] += max(onef.L_AN['mol'])
     
-    print(onef.L_CT[onef.L_CT['id']==782])
-    print(onef.L_AN[onef.L_CT['id']==782])
-    
+    ##--- read second frame ---
     secf = oneframe()
-    secf.update_pbc([[-0.02,58.5387],[-0.02,58.5387],[0.,58.5187]])
+    secf.update_pbc([[0.0,55.8983],[0.02,55.9183],[0.01,55.9083]])
     anions, Nanion, time, pos = read_1_fix(fa)
     cations, Ncations, time, pos = read_1_fix(fc)
     secf.L_CT = onef.read_ion(cations, 2, 40)
     secf.L_AN = onef.read_ion(anions, 1, 1)
     secf.L_CT.loc[:,'mol'] += max(secf.L_AN['mol'])
-    print(secf.L_CT[secf.L_CT['id']==782])
-    print(secf.L_AN[secf.L_CT['id']==782])
     
-    ###--- red all atoms ---
-    """
-    atomlist, Natom, box, time, cols, position  = read_snap(f)
-    onef.load_snap(time, box, atomlist, cols)
+    ###--- read first frame again from lammps 'trj' ---
+    thirdf = oneframe()
+    time, Natom, box, cols, atoms, position  = read_1_lmp(f)
+    thirdf.load_snap(time, box, atoms, cols)
+    # select ions
+    anion_args = (range(1, 1+400), 1, 1, 1, [], 15, 'sel[:]' )
+    thirdf.L_AN = thirdf.ion_gen(*anion_args)
+    thirdf.L_CT = thirdf.ion_gen(range(411, 411+400),2, 1, 1, [], 8, "sel[:]")
+    # release mem
+    del thirdf.L_atom
+    # correct id
+    thirdf.L_CT['id'] += 400
+    # correct mol
+    thirdf.L_CT['mol'] = 0
+    NDeg_Poly_CT = 40
+    NIon_permon = 1
+    Nmol_CT = 10
+    for j0 in range(0, Nmol_CT):
+        for j1 in range(j0*NDeg_Poly_CT*NIon_permon, (j0+1)*NDeg_Poly_CT*NIon_permon):
+            thirdf.L_CT.loc[j1, 'mol'] = j0+1+thirdf.L_AN.shape[0]
     
-
-    # select
-    onef.L_CT = onef.ion_gen(range(401, 401+10),'CT', 40, 1, [18,781], 8, "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]")
-    #onef.L_AN = onef.ion_gen(range(1, 1+400), 'AN', 1, 1, [], 15, "sel[:]" )
-    anion_args = (range(1, 1+400), 'AN', 1, 1, [], 15, 'sel[:]' )
-    onef.L_AN = onef.ion_gen(*anion_args)
-    del onef.L_atom
-    
-    ##--- export ions to pdb ---
-    onef.L_CT['atom'] += 2000
-    #onef.export_pdb('t'+str(onef.time)+'.pdb', pd.concat([onef.L_AN, onef.L_CT], ignore_index=True ) )
     ##--- export ions to lammpstrj ------
+    onef.export_lmptrj(open('one_'+str(onef.time)+'.lammpstrj','w'), pd.concat([onef.L_AN, onef.L_CT], ignore_index=True) )
+    thirdf.export_lmptrj(open('third_'+str(onef.time)+'.lammpstrj','w' ), pd.concat([thirdf.L_AN, thirdf.L_CT], ignore_index=True) )
     
-    onef.export_lmptrj('zz_'+str(onef.time)+'lammpstrj', pd.concat([onef.L_AN, onef.L_CT], ignore_index=True) )
-    """
-    ##
+    ##--- find associating ions and mols for 2 consequent frames ---
     hist_atom_NCT, hist_mol_NCT =onef.find_asso(onef.L_CT,onef.L_AN, 7.8)
     hist_atom_NCT, hist_mol_NCT =secf.find_asso(secf.L_CT,secf.L_AN, 7.8)
     print(onef.hist_asso_im_atom, onef.hist_asso_im_mol)
     
-    print( secf.hoppingtype_AN(onef)[0] )
-    
-    end   = timer.perf_counter()
-    print(end-start)
+    ##--- calc hopping types for the 2 frames ---
+    print('one2second hop:', secf.hoppingtype_AN(onef)[0] )
 
-
+    ##--- timer ends ---
+    end = timer.perf_counter()
+    print('time used: ', end-start)

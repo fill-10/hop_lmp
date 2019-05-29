@@ -1,20 +1,16 @@
 import sys
 import numpy as np
 import pandas as pd
-
+import copy
 from class_oneframe import *
 
 
 class data(object):
-    def __init__(self, pdbfilename, save_mem=1):
+    def __init__(self, savemem = 1):
         self.allframes = []
-        self.atom_dict = None
-        self.filename = pdbfilename
-        self.CT_gen = None
-        self.AN_gen = None
-        self.save_mem = save_mem
+        self.save_mem = savemem
         #print('data object intialized')
-    def readtotal(self, *args, **kwargs):
+    def read_all_pdb(self, filename, *args, **kwargs):
         f = open(self.filename, 'r')
         read_pos = 0
         
@@ -31,16 +27,16 @@ class data(object):
         while 1:
             try:
                 ##--- read each time frame into variables
-                atomlist, Natom, box, time, cols, position  = read_snap(f)  # pass the 'translate' var into read func.
+                atomlist, Natom, box, time, cols, position  = read_1_pdb(f)  # pass the 'translate' var into read func.
                 onef = oneframe()
-                onef.load_snap(time, box, atomlist, cols) 
-                
+                onef.load_snap(time, box, atomlist, cols)
                 if self.CT_gen:
                     onef.L_CT = onef.ion_gen(*self.CT_gen)
                 if self.AN_gen:
                     onef.L_AN = onef.ion_gen(*self.AN_gen)
                 if self.save_mem and (len(onef.L_CT) or len(onef.L_AN) ):
-                    del onef.atoms
+                    del onef.L_atom
+                    onef.L_atom = []
                 if len(onef.L_AN) and len(onef.L_CT):
                     onef.L_CT['atom'] += max(2000, len(onef.L_AN))
 
@@ -51,8 +47,42 @@ class data(object):
                 print('reading finished.', 'error:', error)
                 break
         
-        ##--- release mem ---
         return 0
+
+    def read_all_lmp(self, filename, *args, **kwargs):
+        f = open(filename, 'r')
+        read_pos = 0
+        ##--- keywords interpretation ---
+        ##--- this is to save memory ---
+        if 'CT_gen' in kwargs and kwargs['CT_gen']:
+            self.CT_gen = kwargs['CT_gen']
+        else: self.CT_gen = 0
+        if 'AN_gen' in kwargs and kwargs['AN_gen']:
+            self.AN_gen = kwargs['AN_gen']
+        else: self.AN_gen = 0
+        ##--- loop! ---
+        while 1:
+            try:
+                ##--- read each time frame into variables
+                time, Natom, box, cols, atoms, pos = read_1_lmp(f)
+                onef = oneframe()
+                onef.load_snap(time, box, atoms, cols) 
+                #print(onef.time)
+                if self.CT_gen:
+                    onef.L_CT = onef.ion_gen(*self.CT_gen)
+                if self.AN_gen:
+                    onef.L_AN = onef.ion_gen(*self.AN_gen)
+                if self.save_mem and (len(onef.L_CT) or len(onef.L_AN) ):
+                    del onef.L_atom
+                    onef.L_atom = []
+                if len(onef.L_AN) and len(onef.L_CT):
+                    onef.L_CT['id'] +=  len(onef.L_AN)
+                #print('ion generated')
+                ##--- construct data structure.
+                self.allframes += [ onef ]
+            except Exception as error:
+                print('reading finished.', 'error:', error)
+                break
 
     def AN_CT_gen(self, L_anion_kw, L_cation_kw):
         self.CT_gen = L_cation_kw
@@ -63,10 +93,12 @@ class data(object):
             if self.AN_gen:
                 frame.L_AN = frame.ion_gen(*self.AN_gen)
             if self.save_mem:
-                del frame.atoms
+                del frame.L_atom
+                frame.L_atom = []
             if len(frame.L_AN) and len(frame.L_CT):
-                frame.L_CT['atom'] += max(2000, len(frame.L_AN))
-    def AN_CT_readfix(self, AN_fixf, AN_ionspermol, CT_fixf, CT_ionspermol, box):
+                frame.L_CT['id'] +=  len(frame.L_AN)
+
+    def AN_CT_readfix(self, AN_fixf, AN_ionspermol, CT_fixf, CT_ionspermol, box, dropuxyz=False):
         fAN = open(AN_fixf, 'r')
         fCT = open(CT_fixf, 'r')
         # clean all frames
@@ -82,9 +114,9 @@ class data(object):
                 # read AN
                 anions, Nanion, aniontime, anionpos = read_1_fix(fAN)
                 onef.time = aniontime
-                onef.L_AN = onef.read_ion(anions, 1, AN_ionspermol)
+                onef.L_AN = onef.read_ion(anions, 1, AN_ionspermol, dropuxyz)
                 cations, Ncation, cationtime, cationpos = read_1_fix(fCT)
-                onef.L_CT = onef.read_ion(cations, 2, CT_ionspermol)
+                onef.L_CT = onef.read_ion(cations, 2, CT_ionspermol, dropuxyz)
                 onef.L_CT.loc[:, 'mol'] += max(onef.L_AN['mol'])
                 Nframe +=1
                 self.allframes += [onef]
@@ -109,8 +141,6 @@ class data(object):
                 frame.export_lmptrj( f, pd.concat(  [frame.L_AN, frame.L_CT], ignore_index=True  ) )
             counter += 1
         f.close()
-
-
 
     def export_ions_pdb(self, fn_prefix, skip=0):
         counter = 0
@@ -172,53 +202,40 @@ class data(object):
 
         norm_hist_hop_type = ( histosum/histosum.sum() , np.array([1,2,3,4,5]) )
         return norm_hist_hop_type
-            
-        
-
-
-
-if __name__ == '__main__':
-    import time as timer
-    ##--- read-in the whole file ---
-    filename = ''
-    anionfixfile = '../400K_corrected_lmp/com_AN_every10ps_0-10ns.dat'
-    cationfixfile = '../400K_corrected_lmp/com_CT_every10ps_0-10ns.dat'
-    anionfixfile = '../com_AN_every10ps_0-10ns.dat'
-    cationfixfile = '../com_CT_every10ps_0-10ns.dat'
-    d1 = data(filename)
-    start = timer.perf_counter()
     
-    d1.AN_CT_readfix(  anionfixfile, 1, cationfixfile, 40, [ [-0.02,58.5387],[-0.02,58.5387],[0.,58.5187]  ]  )
-    d1.export_ions_lmptrj('ions.lammpstrj')
+    def unwrapall_AN(self, skip=0):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            self.allframes[i].unwrap(self.allframes[i].L_AN)
+    def unwrapall_CT(self, skip=0):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            self.allframes[i].unwrap(self.allframes[i].L_CT)
 
-    ##--- generate the ions ---
-    # Here are the most tricky lines as follows:
-    # The terminal atoms to knock out, the %(mod) atoms to include(key words in the " "):
-    # The numbers are the number of rows, i.e. the indices in pandas.DataFrame. 
-    # They are equal to the corresponding atomid - 1 !!! 
-    # e.g. knock out terminal [18, 781] means knock out atomid 19 and 782.
-    # index%20 == 5 means atomid%20 == 6.
-    #CT_gen_kw = [range(401, 401+10),'CT', 40, 1, [18,781], 8, "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]"]
-    #AN_gen_kw = [range(1, 1+400), 'AN', 1, 1, [], 15, 'sel[:]']
-    
-    ##--- calcuate histograms ---
-    hist_atom, hist_mol = d1.find_asso_AN_CT(7.8)
-    print(d1.allframes[-1].L_AN.loc[ d1.allframes[-1].L_CT['id'] ==782])
-    
-    print(hist_atom)
-    print(hist_mol)
 
-    norm_hist_hop_type = d1.hoppingtype_AN()
-    print(norm_hist_hop_type)
+    ##--- real time non gaussian (may have fluctuations) ---
+    def nongauss_AN(self, skip=0):
+        Nframe = len( self.allframes )
+        # prepare output columns:
+        time_column = []
+        nongauss_data = []
+        for i in range(1, Nframe, skip+1):
+            time_column += [self.allframes[i].time- self.allframes[0].time]
+            nongauss_data += [ self.allframes[i].nongauss(  self.allframes[i].L_AN , self.allframes[0].L_AN  ) ]
+        return time_column, nongauss_data
+    ##--- averaged non gaussian ---
+    def nongauss_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp = 500):
+        Nframe = len( self.allframes )
+        time_column = []
+        nongauss_data = []
+        for i in range(start_interval, Nframe):
+            #print(' ',i)
+            time_column.append( i*fixsave_every )
+            nongauss_point = [] 
+            for j in range(i, min(i+maxattemp,Nframe), 1):
+                nongauss_point.append( self.allframes[j].nongauss(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
+            #print(len(nongauss_point))
+            nongauss_data.append( np.average(nongauss_point))
+        return time_column, nongauss_data
 
-    stop  = timer.perf_counter()
-    
-    ##--- save pdb files of ions for each frame ---
-    
-    ##--- output to screen ---
-    #print( hist_atom, '\n'*2, hist_mol   )
-    #print(norm_hist_hop_type )
-    #print(d1.hist_hop_type)
-    #print( d1.hist_asso_atom)
-    #print( d1.hist_asso_mol )
-    print(stop-start)
+
