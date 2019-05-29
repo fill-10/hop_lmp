@@ -6,7 +6,7 @@ This package:
 3. calculate associating/coordinating counter ions/polymer chains per ion.
 4. categorize hopping types of the moving ions.
 5. calcualte non gaussian parameters for AN ions.
-6. output stat and lammps trj.
+6. output stats and lammps trj.
 
 Tested on python 3.6.
 
