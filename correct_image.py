@@ -83,7 +83,7 @@ if __name__ == '__main__':
     all_ions_ids = []
     for i in L_CT_mol:
         # in each molecule
-        iloc_Ter = [26,1015]
+        iloc_Ter = [20,781]
         CT_atom_ids = onef.L_atom[ onef.L_atom['mol'] == i ]['id'].values  # save in numpy array
         ##--- drop the terminal atoms and save them separately
         CT_atom_ids = np.delete(CT_atom_ids, iloc_Ter)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         # create an empty list for all ids of ions
         ions_ids = []
         for j in range(0, len(CT_atom_ids) ): # must use length
-            if (j%26<=5 and j%26>=1) or (j%26>=11 and j%26<=13):
+            if (j%20<=5 and j%20>=1) or (j%20>=11 and j%20<=13):
                 ions_ids.append( CT_atom_ids[j])
         # splite ions ids into single ions
         for k in range(0, Deg_poly*ions_per_mono):  # number of ions in one polymer chain
