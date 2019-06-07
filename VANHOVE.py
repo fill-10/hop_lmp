@@ -1,0 +1,34 @@
+import numpy as np
+
+def VANHOVE_S(ux, uy, uz, init_ux, init_uy, init_uz, maxdist =25.0, accuracy = 0.1):
+    # input should be numpy.array or pandas.Series
+    # N dim vector (N atoms)
+    distances = np.sqrt( (ux-init_ux)**2 + (uy-init_uy)**2 + (uz-init_uz)**2 )    # element wise square: **2 or np.square(), element wise sqrt: np.sqrt()
+    mybins = np.arange(0, maxdist, accuracy)
+    return np.histogram(distances, bins=mybins, density=True)[0]*accuracy, (mybins[:-1]+accuracy/2) # normalized hist, center of each bin
+
+def VANHOVE_D(ux, uy, uz, init_ux, init_uy, init_uz, maxdist =25.0, accuracy = 0.1):
+    Natom = min(len(ux), len(uy), len(uz), len(init_ux), len(init_uy), len(init_uz) )
+    distances = []
+    for i in range(0, Natom):
+        for j in range(0, Natom):
+            if j == i :
+                continue
+            else:
+                distances.append(np.sqrt( (ux[i]-init_ux[j])**2 + (uy[i]-init_uy[j])**2 + (uz[i]-init_uz[j])**2 ) )
+    mybins = np.arange(0, maxdist, accuracy)
+    return np.histogram(distances, bins=mybins, density=True)[0]*accuracy, (mybins[:-1]+accuracy/2) 
+
+if __name__=='__main__':
+    y = np.array([-1,-0.5,4])
+    y0 = np.array([-1,0.5,5])
+    # 1.5, 6, 0.5,5.5, 5, 3.5
+    
+    x = x0 =np.array([0,0,0])
+    
+    z =  np.array([-0,0,0])
+    z0 = z
+    print(np.sqrt((x-x0)**2 +(y-y0)**2 +(z-z0)**2))
+    print(VANHOVE_S(x,y,z,x0,y0,z0,6.9,0.5))
+    print(VANHOVE_D(x,y,z,x0,y0,z0,6.9,0.5))
+

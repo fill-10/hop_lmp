@@ -5,6 +5,7 @@ from read_1_frame import *
 from read_1_fix import read_1_fix
 from COM import COM
 from NGP import NGP
+from VANHOVE import *
 from pbc_dist import *
 from unwrap import unwrap
 
@@ -246,7 +247,14 @@ class oneframe():
 
     def nongauss(self,L_mobile_ions,ref): # non gaussian parameter data point
         return NGP(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
-            
+    
+    def vanhove_s(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): # VH_s data point
+        return  VANHOVE_S( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
+    
+    def vanhove_d(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): #VH_d data piont
+        return  VANHOVE_D( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
+    
+
 
 
 ##-----------------------------
@@ -254,7 +262,7 @@ class oneframe():
 if __name__ == '__main__':
     import time as timer
     ##--- read-in the whole file ---
-    filename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
+    filename = '../400K_corrected_lmp_B/VImC2_every100ps_0-50ns.lammpstrj'
     ANfile = '../400K_corrected_lmp_B/com_AN_every10ps_0-10ns.dat'
     CTfile = '../400K_corrected_lmp_B/com_CT_every10ps_0-10ns.dat'
     f = open(filename, 'r')
@@ -312,11 +320,16 @@ if __name__ == '__main__':
     ##--- find associating ions and mols for 2 consequent frames ---
     hist_atom_NCT, hist_mol_NCT =onef.find_asso(onef.L_CT,onef.L_AN, 7.8)
     hist_atom_NCT, hist_mol_NCT =secf.find_asso(secf.L_CT,secf.L_AN, 7.8)
-    print(onef.hist_asso_im_atom, onef.hist_asso_im_mol)
+    print('acco_atoms: ', onef.hist_asso_im_atom, '\nacco_mols: ', onef.hist_asso_im_mol)
     
     ##--- calc hopping types for the 2 frames ---
     print('one2second hop:', secf.hoppingtype_AN(onef)[0] )
-
+    
+    ###--- non gauss ---
+    print('non gauss data point,secf- onef: ',secf.nongauss(secf.L_AN, onef.L_AN))
+    ###--- van hove ---
+    print('van hove self, secf - onef: ', secf.vanhove_s(secf.L_AN, onef.L_AN, 25.0, 0.1))
+    print('van hove distinct, secf - onef: ', secf.vanhove_d(secf.L_AN, onef.L_AN, 25.0, 0.1))
     ##--- timer ends ---
     end = timer.perf_counter()
     print('time used: ', end-start)
