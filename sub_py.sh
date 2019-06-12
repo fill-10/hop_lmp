@@ -67,7 +67,7 @@ echo `cat $PBS_NODEFILE`
 ### /shared/openmpi/gcc/bin/mpirun -machinefile $PBS_NODEFILE -np $ncpus xhpl
 
 ### Or, just run your program
-python3 main2.py
+python3 main_nongauss.py
 wait 
 
 ### the wait command is a must. the shell needs to wait for all the backgrounded commands.
