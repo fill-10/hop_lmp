@@ -238,4 +238,23 @@ class data(object):
             nongauss_data.append( np.average(nongauss_point))
         return time_column, nongauss_data
 
+    ##--- averaged van hove self ---
+    def vanhove_s_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
+        Nframe = len( self.allframes )
+        vanhove_s_raw =[]
+        for i in range(0, Nframe - interval_star):
+            vanhove_s_point = self.allframes[i+interval_star].vanhove_s(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
+            vanhove_s_raw.append([vanhove_s_point[0]])
+        return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_s_raw, axis =0)
+    def fpi_r2_vanhove_s_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
+        dist_col, vanhove_s = self.vanhove_s_AN_avg(interval_star, maxdist, accuracy)
+        return dist_col, vanhove_s*dist_col*dist_col*4*3.14159
 
+    ##--- averaged van hove distinct ---
+    def vanhove_d_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
+        Nframe = len( self.allframes )
+        vanhove_d_raw =[]
+        for i in range(0, Nframe - interval_star):
+            vanhove_d_point = self.allframes[i+interval_star].vanhove_d(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
+            vanhove_d_raw.append([vanhove_d_point[0]])
+        return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_d_raw, axis =0)
