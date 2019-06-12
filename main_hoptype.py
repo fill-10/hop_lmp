@@ -18,15 +18,8 @@ if __name__ == '__main__':
     print('ions written in lammpstrj') 
 
     ##--- calcuate histograms ---
-    #norm_hist_atom, norm_hist_mol = d1.find_asso_AN_CT(7.8)
-    #norm_hist_hop_type = d1.hoppingtype_AN()
-
-    ##--- non gaussian parameter ---
-    ##--- unwrap anion coordinates --- # may not necessary for some cases
-    d1.unwrapall_AN()
-    print('unwrapped data')
-    timestep_col, nongauss_col = d1.nongauss_AN_avg(1, 100) # 100ps/frame
-    print('non gauss calculated')
+    norm_hist_atom, norm_hist_mol = d1.find_asso_AN_CT(7.8)
+    norm_hist_hop_type = d1.hoppingtype_AN()
 
     ##--- timer stop ---
     stop = timer.perf_counter()
@@ -37,11 +30,7 @@ if __name__ == '__main__':
     fn_prefix = 'C2_0-50ns_lmpfix_'
 
     ##--- save hopping types
-    """
     np.savetxt(    fn_prefix+'hist_asso_atom.dat', np.transpose( [norm_hist_atom[1][:-1], norm_hist_atom[0][:]] ), fmt=['%d', '%f'], header='n  P(n)'      )
     np.savetxt(    fn_prefix+'hist_asso_mol.dat' , np.transpose( [norm_hist_mol[1][:-1] , norm_hist_mol[0][:] ] ), fmt=['%d', '%f'], header='N  P(N)'      )
     np.savetxt(    fn_prefix+'hist_hopping.dat'  , np.transpose( [norm_hist_hop_type[1][:-1], norm_hist_hop_type[0][:] ]  ), fmt=['%d', '%f'] , header='N  P(N)'  )
-    """
 
-    ##--- save non gaussian parameter
-    np.savetxt(    fn_prefix+'nongauss.dat', np.transpose( [timestep_col, nongauss_col] ), fmt=['%d', '%f'], header='timestep, nongauss'      )
