@@ -22,5 +22,3 @@ correct_image.py is the one to 'correct' the image flags for the ion atoms to ma
 Todo:
 
 1. fix bugs
-
-2. van hove function
