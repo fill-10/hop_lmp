@@ -50,16 +50,16 @@ def correct_image(atom_group, box):
 if __name__ == '__main__':
     # correct input flags
     from class_oneframe import oneframe
-    from read_1_frame import read_snap
+    from read_1_frame import read_1_lmp
     f = open('../Init.lammpstrj','r')
-    atomlist, Natom, box, time, cols, position  = read_snap(f)
+    time, Natom, box, cols, atomlist, position  = read_1_lmp(f)
     f.close()
     onef = oneframe()
     onef.load_snap(time, box, atomlist, cols)
     
-    
-    onef.export_lmptrj('old.lammpstrj', onef.L_atom)
-    #
+    outfile = open('old.lammpstrj','w')
+    onef.export_lmptrj(outfile, onef.L_atom)
+    outfile.close()
     #
     #
     # Anion correction
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     all_ions_ids = []
     for i in L_CT_mol:
         # in each molecule
-        iloc_Ter = [20,781]
+        iloc_Ter = [27,1132]
         CT_atom_ids = onef.L_atom[ onef.L_atom['mol'] == i ]['id'].values  # save in numpy array
         ##--- drop the terminal atoms and save them separately
         CT_atom_ids = np.delete(CT_atom_ids, iloc_Ter)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         # create an empty list for all ids of ions
         ions_ids = []
         for j in range(0, len(CT_atom_ids) ): # must use length
-            if (j%20<=5 and j%20>=1) or (j%20>=11 and j%20<=13):
+            if (j%29<=5 and j%29>=1) or (j%29>=12 and j%29<=14):
                 ions_ids.append( CT_atom_ids[j])
         # splite ions ids into single ions
         for k in range(0, Deg_poly*ions_per_mono):  # number of ions in one polymer chain
@@ -119,9 +119,9 @@ if __name__ == '__main__':
         onef.L_atom.loc[onef.L_atom['id'].isin(ion), 'mol'] = N_mol+mol_counter
 
         mol_counter += 1
-        
-
-    onef.export_lmptrj('new.lammpstrj', onef.L_atom)
+    outfile = open('new.lammpstrj','w')
+    onef.export_lmptrj(outfile, onef.L_atom)
+    outfile.close()
 
 
 
