@@ -9,7 +9,7 @@ class data(object):
         self.allframes = []
         self.save_mem = savemem
         #print('data object intialized')
-    def read_all_pdb(self, filename, pdc='nojump', *args, **kwargs):
+    def read_all_pdb(self, filename, pbc='nojump', *args, **kwargs):
         f = open(filename, 'r')
         read_pos = 0
         
