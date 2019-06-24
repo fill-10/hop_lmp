@@ -4,14 +4,13 @@ import pandas as pd
 import copy
 from class_oneframe import *
 
-
 class data(object):
     def __init__(self, savemem = 1):
         self.allframes = []
         self.save_mem = savemem
         #print('data object intialized')
-    def read_all_pdb(self, filename, *args, **kwargs):
-        f = open(self.filename, 'r')
+    def read_all_pdb(self, filename, pdc='nojump', *args, **kwargs):
+        f = open(filename, 'r')
         read_pos = 0
         
         ##--- keywords interpretation ---
@@ -27,9 +26,9 @@ class data(object):
         while 1:
             try:
                 ##--- read each time frame into variables
-                atomlist, Natom, box, time, cols, position  = read_1_pdb(f)  # pass the 'translate' var into read func.
+                time, Natom, box, cols, atoms, pos = read_1_pdb(f)
                 onef = oneframe()
-                onef.load_snap(time, box, atomlist, cols)
+                onef.load_snap(time, box, atoms, cols)
                 if self.CT_gen:
                     onef.L_CT = onef.ion_gen(*self.CT_gen)
                 if self.AN_gen:
@@ -38,11 +37,19 @@ class data(object):
                     del onef.L_atom
                     onef.L_atom = []
                 if len(onef.L_AN) and len(onef.L_CT):
-                    onef.L_CT['atom'] += max(2000, len(onef.L_AN))
+                    onef.L_CT['id'] += len(onef.L_AN)
+                ## wrap L_atom
+                if not 'x' in cols:
+                    from unwrap import unwrap
+                    try:
+                        unwrap(onef.L_atom, [[onef.xlo, onef.xhi],[onef.ylo, onef.yhi],[onef.zlo, onef.zhi]] )
+                    except:
+                        pass
+                ## no need to unwrap L_AN or L_CT
+                ## see COM.py for details
 
                 ##--- construct data structure.
                 self.allframes += [ onef]  # pass 'pandas' var into.
-
             except Exception as error:
                 print('reading finished.', 'error:', error)
                 break

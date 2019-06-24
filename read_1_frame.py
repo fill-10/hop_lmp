@@ -79,7 +79,36 @@ def read_1_lmp(f, start=0, dim = 3):
         if readatom and atom_count<=0:
             return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
+def read_1_pdb(f, start=0, dim=3, pbc = 'nojump'):
+    if start>0:
+        f.seek(start)
+    Natom = 0
+    item_time = 0.0
+    item_atoms= []
+    item_box = []
+    if pbc== 'nojump':
+        col_dict = ['id','mol', 'type', 'q', 'ux', 'uy', 'uz']
+    elif pbc =='atom':
+        col_dict = ['id','mol', 'type', 'q', 'x' , 'y' , 'z' ]
+    rawline = 'start'
+    while rawline[0:6] != 'ENDMDL' and rawline !='':
+        rawline = f.readline()
+        if rawline[0:6] == 'TITLE ':
+            cline = rawline.split()
+            item_time = float(cline[-1])
+        elif rawline[0:6] == 'CRYST1':
+            cline = rawline.split()
+            item_box = [ [0., float(cline[1])], [0., float(cline[2])], [0, float(cline[3]) ] ]
+        elif rawline[0:6] == 'ATOM  ' or rawline[0:6]=='HETATM':
+            Natom += 1
+            item_atoms.append(  [  int(rawline[6:11]), int(rawline[22:26]), rawline[12:16].replace(' ',''), 0., float(rawline[30:38]), float(rawline[38:46]), float(rawline[46:54]) ] )
+    
+    return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
+
+
 if __name__ == '__main__' :
+    ##---test read lammpstrj
+    """
     filename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
     f = open(filename, 'r')
     time, Natom, box, col, atoms, pos = read_1_lmp(f)
@@ -88,3 +117,17 @@ if __name__ == '__main__' :
     print(box)
     print(col)
     print(atoms[1])
+    f.close()
+    """
+    ##--- test read pdb from gmx
+    """
+    pdbfilename = '../nvtlong_every10ns_0-300ns.pdb'
+    f = open(pdbfilename, 'r')
+    time, Natom, box, col, atoms, pos = read_1_pdb(f)
+    time, Natom, box, col, atoms, pos = read_1_pdb(f)
+    print(time)
+    print(box)
+    print(col)
+    print(atoms[1])
+    f.close()
+    """

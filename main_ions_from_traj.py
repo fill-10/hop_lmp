@@ -5,7 +5,6 @@ if __name__ == '__main__':
     lmpfilename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
     anionfixfile = '../400K_corrected_lmp_B/com_AN_every100ps_0-50ns.dat'
     cationfixfile = '../400K_corrected_lmp_B/com_CT_every100ps_0-50ns.dat'
-
     #lmpfilename = './test10.lammpstrj'
     ##--- timer start ---
     start = timer.perf_counter()
