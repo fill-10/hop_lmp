@@ -7,6 +7,7 @@ This package:
 4. categorize hopping types of the moving ions.
 5. calcualte non gaussian parameters for AN ions.
 6. output stats and lammps trj.
+7. can read lmptrj and pdb.
 
 Tested on python 3.6.
 
