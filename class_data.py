@@ -40,9 +40,9 @@ class data(object):
                     onef.L_CT['id'] += len(onef.L_AN)
                 ## wrap L_atom
                 if not 'x' in cols:
-                    from unwrap import unwrap
+                    from wrap import wrap
                     try:
-                        unwrap(onef.L_atom, [[onef.xlo, onef.xhi],[onef.ylo, onef.yhi],[onef.zlo, onef.zhi]] )
+                        wrap(onef.L_atom, [[onef.xlo, onef.xhi],[onef.ylo, onef.yhi],[onef.zlo, onef.zhi]] )
                     except:
                         pass
                 ## no need to unwrap L_AN or L_CT
