@@ -252,9 +252,54 @@ class oneframe():
         return  VANHOVE_S( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
     
     def vanhove_d(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): #VH_d data piont
-        return  VANHOVE_D( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
+        #return  VANHOVE_D( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
+        return  VANHOVE_D( L_mobile_ions['x'], L_mobile_ions['y'], L_mobile_ions['z'], ref['x'], ref['y'], ref['z'], maxdist, accuracy ) 
     
+    def findfast(self, L_mobile_ions, ref, r_star=6.0):
+        L_mobile_ions['fast'] = 0
+        r_star_squared = r_star*r_star
+        L_ds_squared = (L_mobile_ions['ux']-ref['ux'])**2 +(L_mobile_ions['uy']-ref['uy'])**2 + (L_mobile_ions['uz']-ref['uz'])**2
+        for (idx, val) in L_ds_squared.iteritems():
+            if val > r_star_squared:
+                L_mobile_ions.loc[idx, 'fast'] = 1
+        return 0 
 
+    def findstring(self, L_mobile_ions, ref, cutoff=2.5):
+        if 'fast' in L_mobile_ions.columns:
+            L_mobile_ions['string'] = -1
+            current_string = 1
+            for (idx, row) in L_mobile_ions[L_mobile_ions['fast']>0].iterrows():
+                L_mobile_ions[idx, 'string'] = 0
+                # get the coor of mobile ion:
+                coor_mob = np.array([row['x'], row['y'], row['z'])
+                for (idx2, row2) in ref[ref.index>idx].iterrows():
+                    if L_mobile_ions.loc[idx2, 'fast'] <=0:
+                        continue # pass the slow ions
+                    if L_mobile_ions.loc[idx2,'string'] == row['string']:
+                        continue # pass previously combined
+                    else:
+                        # get the coor of ref ion:
+                        coor_ref = np.array([ row2['x'], row2['y'], row['z'] )
+                        if ifconn(coor_mob, coor_ref, np.array([self.deltaX, self.deltaY,self.deltaZ]), cutoff):
+                            ref_string_id = L_mobile_ions.loc[idx2,'string']
+                            if row['string'] <=0: # mob does not in string
+                                if ref_string_id >0: # ref in string
+                                    L_mobile_ions.loc[idx,'string'] = ref_string_id
+                                else: # it's a new string
+                                    L_mobile_ions.loc[idx, 'string'] = current_string
+                                    L_mobile_ions.loc[idx2,'string'] = current_string
+                                    current_string +=1
+                            elif ref_string_id <=0: # mob is in string but ref not in string
+                                L_mobile_ions.loc[idx2,'string'] = row['string']
+                            else: # both two are in strings, need to combine two strings
+                                larger_string_id = max(row.loc[idx2, 'string'], row['string'])
+                                smaller_string_id = min(row.loc[idx2, 'string'], row['string'])
+                                L_mobile.loc[ L_mobile_ions['string']==larger_string_id, 'string'] = smaller_string_id
+            string_histo = np.histogram(L_mobile_ions[L_mobile_ions['fast']>0] , bins=np.arange(0, L_mobile_ions.shape[0] +2)
+            return string_histo  # not normalized
+        else:
+            print(need to find 'fast' atoms!)
+            return -1
 
 
 ##-----------------------------

@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import time as timer
     ##--- read-in the whole file ---
     pdbfilename = '../nvtlong_every10ns_0-300ns.pdb'
-    pdbfilename = '../nvtlong_every100ps_0-50ns.pdb' # rdf calculation
+    #pdbfilename = '../nvtlong_every100ps_0-50ns.pdb' # rdf calculation
     pdbfilename = '../nvtlong_every10ps_0-50ns.pdb' # hopping calculation
     ##--- output general settings ---
     import numpy as np
@@ -30,14 +30,15 @@ if __name__ == '__main__':
     """
 
     ##--- calcuate histograms ---
-    norm_hist_atom, norm_hist_mol = d2.find_asso_AN_CT(6.3)
-    norm_hist_hop_type = d2.hoppingtype_AN()
+    #"""
+    norm_hist_atom, norm_hist_mol = d1.find_asso_AN_CT(6.3)
+    norm_hist_hop_type = d1.hoppingtype_AN()
 
     ##--- save hopping types
     np.savetxt(    fn_prefix+'hist_asso_atom.dat', np.transpose( [norm_hist_atom[1][:-1], norm_hist_atom[0][:]] ), fmt=['%d', '%f'], header='n  P(n)'      )
     np.savetxt(    fn_prefix+'hist_asso_mol.dat' , np.transpose( [norm_hist_mol[1][:-1] , norm_hist_mol[0][:] ] ), fmt=['%d', '%f'], header='N  P(N)'      )
     np.savetxt(    fn_prefix+'hist_hopping.dat'  , np.transpose( [norm_hist_hop_type[1][:-1], norm_hist_hop_type[0][:] ]  ), fmt=['%d', '%f'] , header='N  P(N)'  )
-
+    #"""
     ##--- non gaussian parameter ---
     ##--- unwrap anion coordinates --- # may not necessary for some cases
     #d1.unwrapall_AN()
