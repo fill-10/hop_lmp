@@ -16,6 +16,7 @@ Not complete yet but already useful.
 Howto:
 
 main_*.py is the 'template' to import ions from lammps.
+
 pdb.main_*.py is the 'template'  to import trj and generate ions from pdb from gmx trjconv.
 
 correct_image.py is the one to 'correct' the image flags for the ion atoms to make pseodu topology.
