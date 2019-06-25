@@ -1,5 +1,0 @@
-reading finished. error: list index out of range
-last timestep read:  50000.0
-Traceback (most recent call last):
-  File "<stdin>", line 33, in <module>
-NameError: name 'd2' is not defined
