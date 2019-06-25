@@ -262,43 +262,60 @@ class oneframe():
         for (idx, val) in L_ds_squared.iteritems():
             if val > r_star_squared:
                 L_mobile_ions.loc[idx, 'fast'] = 1
-        return 0 
+        return L_mobile_ions[L_mobile_ions['fast']>0].shape[0]/L_mobile_ions.shape[0] 
 
     def findstring(self, L_mobile_ions, ref, cutoff=2.5):
         if 'fast' in L_mobile_ions.columns:
             L_mobile_ions['string'] = -1
+            L_mobile_ions.loc[L_mobile_ions['fast']>0, 'string'] = 0
+            #print(L_mobile_ions)
+            #print('ready to loop')
             current_string = 1
             for (idx, row) in L_mobile_ions[L_mobile_ions['fast']>0].iterrows():
-                L_mobile_ions[idx, 'string'] = 0
                 # get the coor of mobile ion:
-                coor_mob = np.array([row['x'], row['y'], row['z'])
-                for (idx2, row2) in ref[ref.index>idx].iterrows():
+                #print('current mob ion: \n', int(row['id'])   )
+                coor_mob = np.array([row['x'], row['y'], row['z']])
+                for (idx2, row2) in ref.iterrows():
+                    if idx2 == idx : # skip same ion
+                        continue
                     if L_mobile_ions.loc[idx2, 'fast'] <=0:
-                        continue # pass the slow ions
-                    if L_mobile_ions.loc[idx2,'string'] == row['string']:
-                        continue # pass previously combined
+                        continue # skip the slow ion
+                    if L_mobile_ions.loc[idx2,'string'] != 0 and ( L_mobile_ions.loc[idx2,'string'] == L_mobile_ions.loc[idx,'string'] ):
+                        continue # skip previously combined
                     else:
                         # get the coor of ref ion:
-                        coor_ref = np.array([ row2['x'], row2['y'], row['z'] )
+                        coor_ref = np.array([ row2['x'], row2['y'], row2['z']] )
+                        #print(coor_mob, coor_ref)
                         if ifconn(coor_mob, coor_ref, np.array([self.deltaX, self.deltaY,self.deltaZ]), cutoff):
-                            ref_string_id = L_mobile_ions.loc[idx2,'string']
-                            if row['string'] <=0: # mob does not in string
+                            ref_string_id = L_mobile_ions.loc[idx2,'string'] # read in string id of ref ion
+                            #print('ions ids: ', idx+1, idx2+1, 'are in the same string!'  )
+                            if L_mobile_ions.loc[idx,'string'] <=0: # mob does not in string
                                 if ref_string_id >0: # ref in string
                                     L_mobile_ions.loc[idx,'string'] = ref_string_id
+                                    #print('ref ion ', 'brings the string id:', ref_string_id)
                                 else: # it's a new string
                                     L_mobile_ions.loc[idx, 'string'] = current_string
                                     L_mobile_ions.loc[idx2,'string'] = current_string
+                                    #print('new string created: ', current_string)
                                     current_string +=1
                             elif ref_string_id <=0: # mob is in string but ref not in string
-                                L_mobile_ions.loc[idx2,'string'] = row['string']
+                                L_mobile_ions.loc[idx2,'string'] = L_mobile_ions.loc[idx,'string']
+                                #print('mobile ion brings the string id: ', int(L_mobile_ions.loc[idx,'string'])    )
                             else: # both two are in strings, need to combine two strings
-                                larger_string_id = max(row.loc[idx2, 'string'], row['string'])
-                                smaller_string_id = min(row.loc[idx2, 'string'], row['string'])
-                                L_mobile.loc[ L_mobile_ions['string']==larger_string_id, 'string'] = smaller_string_id
-            string_histo = np.histogram(L_mobile_ions[L_mobile_ions['fast']>0] , bins=np.arange(0, L_mobile_ions.shape[0] +2)
-            return string_histo  # not normalized
+                                larger_string_id = max(L_mobile_ions.loc[idx2, 'string'], L_mobile_ions.loc[idx,'string'])
+                                smaller_string_id = min(L_mobile_ions.loc[idx2, 'string'], L_mobile_ions.loc[idx,'string'])
+                                L_mobile_ions.loc[ L_mobile_ions['string']==larger_string_id, 'string'] = smaller_string_id
+                                #print('combine the two strings: ', larger_string_id, smaller_string_id)
+                            #print( L_mobile_ions.loc[L_mobile_ions['fast']>0, ['id','x', 'y', 'z', 'fast','string']]   )
+            
+            stringid_histo = np.histogram(L_mobile_ions[L_mobile_ions['fast']>0]['string'] , bins=np.arange(0, L_mobile_ions.shape[0] +2) )
+            ### command above: -1(slow) is excluded, stringid==0 is ns=1, stringid>0 is ns>1
+            ### command below: exclude stringid==0 first, then add it back by hand.
+            stringlength_histo = np.histogram(stringid_histo[0][1:], bins=np.arange(1,11))
+            stringlength_histo[0][0] =  stringid_histo[0][0]
+            return stringlength_histo  # not normalized
         else:
-            print(need to find 'fast' atoms!)
+            print('need to find fast atoms!')
             return -1
 
 
