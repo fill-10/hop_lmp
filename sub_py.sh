@@ -17,7 +17,7 @@
 # or uncomment the following line by removing the initial ``###''
 #PBS -V 
 ### Set the job name
-#PBS -N py
+#PBS -N vhs580
 
 ### Run in the queue named "default"
 ### 'batch' is the only queue available on this qchem2 cluster, by default.
@@ -40,7 +40,7 @@
 ###
 ### You MUST specify some number of nodes or TORQUE will fail to load balance.
 ###
-#PBS -l nodes=1:ppn=8
+#PBS -l nodes=1:ppn=4
 
 ### Tell PBS how much memory you expect to use. Use units of 'b','kb', 'mb' or 'gb'
 ### #PBS -l mem=256m
@@ -67,7 +67,7 @@ echo `cat $PBS_NODEFILE`
 ### /shared/openmpi/gcc/bin/mpirun -machinefile $PBS_NODEFILE -np $ncpus xhpl
 
 ### Or, just run your program
-python3 main_nongauss.py
+python3 main_ions_from_pdb.py
 wait 
 
 ### the wait command is a must. the shell needs to wait for all the backgrounded commands.
