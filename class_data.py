@@ -268,3 +268,16 @@ class data(object):
             vanhove_d_point = self.allframes[i+interval_star].vanhove_d(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
             vanhove_d_raw.append([vanhove_d_point[0]])
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_d_raw, axis =0)
+
+    ##--- find fast ---
+    def find_AN_fast(self, interval_star, rstar):
+        Nframe = len( self.allframes)
+        mobile_percent = []
+        for i in range(0, Nframe-interval_star):
+            mobile_percent_single_p = self.allframes[i+interval_star].findfast(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN)
+            mobile_percent +=[mobile_percent_single_p]
+        return np.mean(mobile_percent)
+
+    ##--- find string ---
+    def find_AN_string(self, interval_star, cutoff):
+        pass
