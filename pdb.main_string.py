@@ -1,12 +1,13 @@
 from class_data import data
 if __name__ == '__main__':
     import time as timer
-
-    pdbfilename = '/work/04201/tg835006/stampede2/LiuSum/Br/BrC5/580/vanhove580_2200.pdb' # vanhove_s calculation
+    workdir = '/work/04201/tg835006/stampede2/LiuSum/Br/BrC5/580/'
+    pdbfilename = 'testvanhove580_2200.pdb' # vanhove_s calculation
+    pdbfilename = workdir+pdbfilename
     ##--- output general settings ---=
     import numpy as np
     fn_prefix = 'BrC5pdb_580_'
-    
+    fn_prefix = workdir+fn_prefix
     ##--- timer start ---
     start = timer.perf_counter()
     
@@ -21,13 +22,20 @@ if __name__ == '__main__':
     #print(d1.allframes[0].L_AN)
     print('last timestep read: ', d1.allframes[-1].time)
     
-    ##--- van hove self ---
+    ##--- unwrap AN ---
     d1.unwrapall_AN()  # no need to unwrap if read from fix file and uxyz not deleted
-    fast_percentage = d1.find_AN_fast(1, 4.6)  # interval_star= 1= 2200ps, r*=4.6A
+
+    ##--- find fast AN ---
+    fast_percentage = d1.find_AN_fast(1, 4.6, skip=0)  # interval_star= 1= 2200ps, r*=4.6A
     print('fast anion % = ' , fast_percentage)
+    
+    ##--- find string ---
+    pns_histo = d1.find_AN_string(1, 2.5, maxlength=20, skip=0)
+    
     ##--- timer stop ---
     stop = timer.perf_counter()
     print('time used in sec: ', stop-start)
+
     ##--- save
-    #np.savetxt(    fn_prefix+'vanhove_s.dat', np.transpose( np.vstack( (dist_col, vanhove_s_col) )), fmt=['%f', '%f'], header='dist, vanhove_s'      )
-    #np.savetxt(    fn_prefix+'4pi_r2_vanhove_s.dat', np.transpose( np.vstack( (dist_col, fpi_r2_vanhove_s_col) )), fmt=['%f', '%f'], header='dist, 4pi*r^2vanhove_s'      )
+    np.savetxt(    fn_prefix+'pns_strign.dat', np.transpose( np.vstack( (pns_histo[1], pns_histo[0]) )), fmt=['%d', '%f'], header='dist, P(ns)'      )
+
