@@ -279,17 +279,20 @@ class data(object):
         return np.mean(mobile_percent)
 
     ##--- find string ---
-    def find_AN_string(self, interval_star, cutoff, maxlength=20, skip=0):
+    def find_AN_string(self, interval_star, cutoff, maxlength=20, skip=0, include_rattle_ions = False):
         Nframe = len(self.allframes)
         pns_list = []
         for i in range(0, Nframe-interval_star, skip+1):
             pns_single = self.allframes[i+interval_star].findstring(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, cutoff)
-            #print(pns_single[0])
-            #print(pns_single[1][:-1])
-            #print( pns_single[0] * pns_single[1][:-1]  ) #weigthed histo
+            
             weighted_pns_single =  pns_single[0] * pns_single[1][:-1]   #weigthed histo
-            weighted_pns_single[0] =  self.allframes[i+interval_star].L_AN.shape[0] - np.sum(weighted_pns_single[1:])
-            #print(weighted_pns_single)
-
-            pns_list += [ weighted_pns_single ]
-        return np.mean(pns_list, axis=0)/self.allframes[0].L_AN.shape[0], np.arange(1, maxlength+1)
+            #
+            if include_rattle_ions: # ns =1 includes rattling and fast, so correct weighted_pns_single[0]
+                weighted_pns_single[0] =  self.allframes[i+interval_star].L_AN.shape[0] - np.sum(weighted_pns_single[1:])
+                total_counted_ion = self.allframes[i+interval_star].L_AN.shape[0] 
+            else:
+                total_counted_ion = np.sum(weighted_pns_single) 
+            if total_counted_ion>0: # to avoid 0 string when not include rattleing ions.
+                pns_list += [ weighted_pns_single/total_counted_ion]
+                print(pns_list)
+        return np.mean(pns_list, axis=0), np.arange(1, maxlength+1)
