@@ -7,6 +7,7 @@ if __name__ == '__main__':
 
     time, Natom, box, col, atoms, pos = read_1_pdb(f)
     time, Natom, box, col, atoms, pos = read_1_pdb(f)
+    time, Natom, box, col, atoms, pos = read_1_pdb(f)
 
     onef = oneframe()
     time, Natom, box, col, atoms, pos = read_1_pdb(f)
@@ -31,7 +32,17 @@ if __name__ == '__main__':
     fastpercent = secf.findfast(secf.L_AN, onef.L_AN, 4.6)
     onef.L_AN['fast'] = secf.L_AN['fast']
     stringlength_hist = secf.findstring(secf.L_AN, onef.L_AN, 2.5)
-    print('first frame: \n', onef.L_AN.loc[onef.L_AN['fast']>0,['id','x','y','z','fast'] ])
-    print('second frame: \n', secf.L_AN.loc[secf.L_AN['fast']>0,['id', 'x','y','z','fast','string'] ])
+    print('first frame: \n', onef.L_AN.loc[onef.L_AN['fast']>0,['id','mol','x','y','z','fast'] ])
+    print('second frame: \n', secf.L_AN.loc[secf.L_AN['fast']>0,['id','mol', 'x','y','z','fast','string'] ])
     print(fastpercent)
     print(stringlength_hist)
+    ##--- output ---
+    onef.L_AN['type'] = secf.L_AN['string']
+    secf.L_AN['type'] = secf.L_AN['string'] + 100
+
+    f = open('stringsample_onef.lammpstrj','w')
+    onef.export_lmptrj(f, onef.L_AN.loc[ onef.L_AN['fast']>0, ['id','mol','type','x','y','z','ix', 'iy', 'iz'] ] )
+    f.close()
+    f = open('stringsample_secf.lammpstrj','w')
+    secf.export_lmptrj(f, secf.L_AN.loc[ secf.L_AN['fast']>0, ['id','mol','type','x','y','z','ix', 'iy', 'iz'] ] )
+    f.close()

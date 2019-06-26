@@ -264,7 +264,7 @@ class oneframe():
                 L_mobile_ions.loc[idx, 'fast'] = 1
         return L_mobile_ions[L_mobile_ions['fast']>0].shape[0]/L_mobile_ions.shape[0] 
 
-    def findstring(self, L_mobile_ions, ref, cutoff=2.5):
+    def findstring(self, L_mobile_ions, ref, cutoff=2.5, maxlength=20):
         if 'fast' in L_mobile_ions.columns:
             L_mobile_ions['string'] = -1
             L_mobile_ions.loc[L_mobile_ions['fast']>0, 'string'] = 0
@@ -311,7 +311,7 @@ class oneframe():
             stringid_histo = np.histogram(L_mobile_ions[L_mobile_ions['fast']>0]['string'] , bins=np.arange(0, L_mobile_ions.shape[0] +2) )
             ### command above: -1(slow) is excluded, stringid==0 is ns=1, stringid>0 is ns>1
             ### command below: exclude stringid==0 first, then add it back by hand.
-            stringlength_histo = np.histogram(stringid_histo[0][1:], bins=np.arange(1,11))
+            stringlength_histo = np.histogram(stringid_histo[0][1:], bins=np.arange(1,maxlength+2))
             stringlength_histo[0][0] =  stringid_histo[0][0]
             return stringlength_histo  # not normalized
         else:

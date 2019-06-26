@@ -270,14 +270,26 @@ class data(object):
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_d_raw, axis =0)
 
     ##--- find fast ---
-    def find_AN_fast(self, interval_star, rstar):
+    def find_AN_fast(self, interval_star, rstar, skip=0):
         Nframe = len( self.allframes)
         mobile_percent = []
-        for i in range(0, Nframe-interval_star):
-            mobile_percent_single_p = self.allframes[i+interval_star].findfast(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN)
+        for i in range(0, Nframe-interval_star, skip+1):
+            mobile_percent_single_p = self.allframes[i+interval_star].findfast(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, rstar)
             mobile_percent +=[mobile_percent_single_p]
         return np.mean(mobile_percent)
 
     ##--- find string ---
-    def find_AN_string(self, interval_star, cutoff):
-        pass
+    def find_AN_string(self, interval_star, cutoff, maxlength=20, skip=0):
+        Nframe = len(self.allframes)
+        pns_list = []
+        for i in range(0, Nframe-interval_star, skip+1):
+            pns_single = self.allframes[i+interval_star].findstring(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, cutoff)
+            #print(pns_single[0])
+            #print(pns_single[1][:-1])
+            #print( pns_single[0] * pns_single[1][:-1]  ) #weigthed histo
+            weighted_pns_single =  pns_single[0] * pns_single[1][:-1]   #weigthed histo
+            weighted_pns_single[0] =  self.allframes[i+interval_star].L_AN.shape[0] - np.sum(weighted_pns_single[1:])
+            #print(weighted_pns_single)
+
+            pns_list += [ weighted_pns_single ]
+        return np.mean(pns_list, axis=0)/self.allframes[0].L_AN.shape[0], np.arange(1, maxlength+1)
