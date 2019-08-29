@@ -37,17 +37,8 @@ class data(object):
                     del onef.L_atom
                     onef.L_atom = []
                 if len(onef.L_AN) and len(onef.L_CT):
-                    onef.L_CT['id'] += len(onef.L_AN)
-                ## wrap L_atom
-                if not 'x' in cols:
-                    from wrap import wrap
-                    try:
-                        wrap(onef.L_atom, [[onef.xlo, onef.xhi],[onef.ylo, onef.yhi],[onef.zlo, onef.zhi]] )
-                    except:
-                        pass
-                ## no need to unwrap L_AN or L_CT
-                ## see COM.py for details
-
+                    onef.L_CT['id'] += max(onef.L_AN['id'])
+ 
                 ##--- construct data structure.
                 self.allframes += [ onef]  # pass 'pandas' var into.
             except Exception as error:
@@ -133,7 +124,9 @@ class data(object):
             print('ion reading completed')
             #print(Nframe)
     
-    def export_ions_lmptrj(self, fn, skip=0):
+    def export_ions_lmptrj(self, fn, skip=0, col = \
+            ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'] ) :
+        # vmd can only read unwrapped lmptrj 
         counter = 0
         f = open(fn, 'w')
         for frame in self.allframes:
@@ -141,27 +134,123 @@ class data(object):
                 counter +=1
                 continue
             if len(frame.L_AN) and not len(frame.L_CT):
-                frame.export_lmptrj( f, frame.L_AN  )
+                frame.export_lmptrj( f, frame.L_AN , col )
             if not len(frame.L_AN) and len(frame.L_CT):
-                frame.export_lmptrj( f, frame.L_CT )
+                frame.export_lmptrj( f, frame.L_CT , col )
             if len(frame.L_AN) and len(frame.L_CT):
-                frame.export_lmptrj( f, pd.concat(  [frame.L_AN, frame.L_CT], ignore_index=True  ) )
+                frame.export_lmptrj( f, pd.concat( \
+                    [frame.L_AN.loc[:, col], frame.L_CT.loc[:, col] ], \
+                    ignore_index=True ) , col )
             counter += 1
         f.close()
-
-    def export_ions_pdb(self, fn_prefix, skip=0):
+    def export_all_lmptrj(self, fn, skip=0, col = \
+            ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'] ) :
+        # vmd can only read unwrapped lmptrj 
         counter = 0
+        f = open(fn, 'w')
         for frame in self.allframes:
             if counter%(skip+1):
                 counter +=1
                 continue
             if len(frame.L_AN) and not len(frame.L_CT):
-                frame.export_pdb(  fn_prefix+str(frame.time)+'.pdb', frame.L_AN, counter  )
+                frame.export_lmptrj( f, \
+                    pd.concat( [frame.L_AN.loc[:, col], frame.L_atom.loc[:,col]], \
+                    ignore_index=True )    )
             if not len(frame.L_AN) and len(frame.L_CT):
-                frame.export_pdb(  fn_prefix+str(frame.time)+'.pdb', frame.L_CT, counter  )
+                frame.export_lmptrj( f, \
+                    pd.concat( [frame.L_CT.loc[:, col], frame.L_atom.loc[:, col]], \
+                    ignore_index=True )    )
             if len(frame.L_AN) and len(frame.L_CT):
-                frame.export_pdb(  fn_prefix+str(frame.time)+'.pdb', pd.concat(  [frame.L_AN, frame.L_CT], ignore_index=True  ), counter  )
+                frame.export_lmptrj( f, \
+                    pd.concat( [frame.L_AN.loc[:, col], frame.L_CT.loc[:, col], \
+                    frame.L_atom.loc[:, col]], ignore_index=True  )    )
             counter += 1
+        f.close()
+    
+    def export_ions_pdb(self, fn, skip=0):
+        # pdb records unwrapped data
+        col = ['id', 'mol', 'type', 'ux', 'uy', 'uz']
+        counter = 0
+        f = open(fn, 'w')
+        for frame in self.allframes:
+            if counter%(skip+1):
+                counter +=1
+                continue
+            if len(frame.L_AN) and not len(frame.L_CT):
+                frame.export_pdb(  f, frame.L_AN , counter+1 )
+            if not len(frame.L_AN) and len(frame.L_CT):
+                frame.export_pdb(  f, frame.L_CT , counter+1 )
+            if len(frame.L_AN) and len(frame.L_CT):
+                frame.export_pdb(  f, \
+                    pd.concat(  [frame.L_AN.loc[:,col], \
+                    frame.L_CT.loc[:,col] ], ignore_index=True  ), counter +1 )
+            counter += 1
+    
+    def export_all_pdb(self, fn, skip=0):
+        # pdb records unwrapped data
+        col = ['id', 'mol', 'type', 'ux', 'uy', 'uz']
+        counter = 0
+        f = open(fn, 'w')
+        for frame in self.allframes:
+            if counter%(skip+1):
+                counter +=1
+                continue
+            if len(frame.L_AN) and not len(frame.L_CT):
+                frame.export_pdb(  f, \
+                    pd.concat(  [ frame.L_AN.loc[:,col], \
+                    frame.L_atom.loc[:,col] ], ignore_index=True  ) , counter+1 )
+            if not len(frame.L_AN) and len(frame.L_CT):
+                frame.export_pdb(  f, \
+                    pd.concat(  [ frame.L_CT.loc[:,col], \
+                    frame.L_atom.loc[:,vol] ], ignore_index=True  ) , counter+1 )
+            if len(frame.L_AN) and len(frame.L_CT):
+                frame.export_pdb(  f, \
+                    pd.concat(  [ frame.L_AN.loc[:,col], \
+                    frame.L_CT.loc[:,col],\
+                    frame.L_atom.loc[:,col] ],\
+                    ignore_index=True  ) , counter+1 )
+            counter += 1
+
+    def wrapall_L(self, skip=0 ):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            try:
+                self.allframes[i].wrap(self.allframes[i].L_AN)
+            except:
+                pass
+            try:
+                self.allframes[i].wrap(self.allframes[i].L_CT)
+            except:
+                pass
+            try:
+                self.allframes[i].wrap(self.allframes[i].L_atom)
+            except:
+                pass
+    def unwrapall_L(self, skip=0 ):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            try:
+                self.allframes[i].unwrap(self.allframes[i].L_AN)
+            except:
+                pass
+            try:
+                self.allframes[i].unwrap(self.allframes[i].L_CT)
+            except:
+                pass
+            try:
+                self.allframes[i].unwrap(self.allframes[i].L_atom)
+            except:
+                pass
+
+    def unwrapall_AN(self, skip=0):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            self.allframes[i].unwrap(self.allframes[i].L_AN)
+    def unwrapall_CT(self, skip=0):
+        Nframe = len( self.allframes )
+        for i in range(0, Nframe, skip+1):
+            self.allframes[i].unwrap(self.allframes[i].L_CT)
+
 
     def find_asso_AN_CT(self, r_cut, skip=0, calc_stat=True):
         counter = 0
@@ -209,17 +298,7 @@ class data(object):
 
         norm_hist_hop_type = ( histosum/histosum.sum() , np.array([1,2,3,4,5]) )
         return norm_hist_hop_type
-    
-    def unwrapall_AN(self, skip=0):
-        Nframe = len( self.allframes )
-        for i in range(0, Nframe, skip+1):
-            self.allframes[i].unwrap(self.allframes[i].L_AN)
-    def unwrapall_CT(self, skip=0):
-        Nframe = len( self.allframes )
-        for i in range(0, Nframe, skip+1):
-            self.allframes[i].unwrap(self.allframes[i].L_CT)
-
-
+   
     ##--- real time non gaussian (may have fluctuations) ---
     def nongauss_AN(self, skip=0):
         Nframe = len( self.allframes )

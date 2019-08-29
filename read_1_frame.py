@@ -79,32 +79,33 @@ def read_1_lmp(f, start=0, dim = 3):
         if readatom and atom_count<=0:
             return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
-def read_1_pdb(f, start=0, dim=3, pbc = 'nojump'):
+def read_1_pdb(f, start=0, dim=3):
     if start>0:
         f.seek(start)
     Natom = 0
     item_time = 0.0
     item_atoms= []
     item_box = []
-    if pbc== 'nojump':
-        col_dict = ['id','mol', 'type', 'q', 'ux', 'uy', 'uz']
-    elif pbc =='atom':
-        col_dict = ['id','mol', 'type', 'q', 'x' , 'y' , 'z' ]
+    # pdb only records 'unwrapped' data
+    col_dict = ['id','mol', 'type', 'ux', 'uy', 'uz']
     rawline = 'start'
-    while rawline[0:6] != 'ENDMDL' and rawline !='':
+    while rawline[0:6] != 'ENDMDL' and rawline !='': # EOF is ''
         rawline = f.readline()
         if rawline[0:6] == 'TITLE ':
             cline = rawline.split()
-            item_time = float(cline[-1])
+            # gromacs: time is recorded after 't='
+            item_time = float( cline[cline.index('t=')+1] )
         elif rawline[0:6] == 'CRYST1':
             cline = rawline.split()
             item_box = [ [0., float(cline[1])], [0., float(cline[2])], [0, float(cline[3]) ] ]
         elif rawline[0:6] == 'ATOM  ' or rawline[0:6]=='HETATM':
             Natom += 1
-            item_atoms.append(  [  int(rawline[6:11]), int(rawline[22:26]), rawline[12:16].replace(' ',''), 0., float(rawline[30:38]), float(rawline[38:46]), float(rawline[46:54]) ] )
+            item_atoms.append(  [  int(rawline[6:11]), int(rawline[22:26]), rawline[12:16].replace(' ',''), float(rawline[30:38]), float(rawline[38:46]), float(rawline[46:54]) ] )
     
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
+def read_1_gro(f, start=0, dim=3):
+    pass
 
 if __name__ == '__main__' :
     ##---test read lammpstrj
@@ -121,7 +122,7 @@ if __name__ == '__main__' :
     """
     ##--- test read pdb from gmx
     """
-    pdbfilename = '../nvtlong_every10ns_0-300ns.pdb'
+    pdbfilename = '../nvtprod_every1ns_00-50ns.pdb'
     f = open(pdbfilename, 'r')
     time, Natom, box, col, atoms, pos = read_1_pdb(f)
     time, Natom, box, col, atoms, pos = read_1_pdb(f)
@@ -129,5 +130,6 @@ if __name__ == '__main__' :
     print(box)
     print(col)
     print(atoms[1])
+    print(atoms[-1])
     f.close()
     """

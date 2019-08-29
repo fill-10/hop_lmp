@@ -8,7 +8,7 @@ from NGP import NGP
 from VANHOVE import *
 from pbc_dist import *
 from unwrap import unwrap
-
+from wrap import wrap
 ##--- define a single frame class
 class oneframe():
     def __init__(self):
@@ -51,15 +51,21 @@ class oneframe():
             print('No Z direction data')
             self.dim = 2
     #
-    def load_atoms(self, atoms,  cols=['id','mol','type','q', 'x', 'y','z','ix', 'iy', 'iz','element' ]):
+    def load_atoms(self, atoms, cols):
         self.L_atom = pd.DataFrame(atoms, columns = cols)
         self.Natom  =  self.L_atom.shape[0]
-    def load_snap(self, time, box, atoms, cols = ['id','mol','type','q', 'x', 'y','z','ix', 'iy', 'iz','element' ]):
+    def load_snap(self, time, box, atoms, cols = ['id','mol','type', 'x', 'y','z','ix', 'iy', 'iz','element' ]):
         self.time = time
         self.update_pbc(box)
         self.load_atoms(atoms, cols)
     #
-    def ion_gen(self, L_molid = range(401, 401+10), iontype='101', Deg_poly=40, ions_per_mono = 1, ilocL_Ter = [18,781], Natom_ION = 8, pick_cr_per_mon= "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]" , COM_map_col= 'element'):
+    def unwrap(self, L_ion): # L_ion is a pointer to an object
+        unwrap(L_ion, [[self.xlo, self.xhi], [self.ylo, self.yhi], [self.zlo, self.zhi]])
+    def wrap(self, L_ion):
+        wrap(L_ion, [[self.xlo, self.xhi], [self.ylo, self.yhi], [self.zlo, self.zhi]])
+    #
+    def ion_gen(self, L_molid = range(401, 401+10), iontype='101', Deg_poly=40, ions_per_mono = 1, ilocL_Ter = [18,781], Natom_ION = 8,\
+                pick_cr_per_mon= "sel[  (  (sel.index%20 <=5) & (sel.index%20>=1) ) | ( (sel.index%20>=9 ) & (sel.index%20<=11)) ]" , COM_map_col='type'):
         ##--- create an empty list for ion candidates
         L_ion = []
         ##--- Loop over all molecules
@@ -78,36 +84,18 @@ class oneframe():
             ##--- split them into independent ions
             for j in range(0,Deg_poly*ions_per_mono):
                 ##--- compute center of mass for each ion
-                ## COM in this version always returns x,y,z and ix,iy,iz
-                ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz = COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], [[self.xlo, self.xhi],[self.ylo, self.yhi],[self.zlo, self.zhi]], COM_map_col )
+                ion_ux, ion_uy, ion_uz= COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], COM_map_col )
                 ##--- append this ion to the final list
-                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, i, iontype, ion_x, ion_y, ion_z, ion_ix, ion_iy, ion_iz]  ]
-            ##--- delete the temp dataframe sel1
+                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, i, iontype, ion_ux, ion_uy, ion_uz]  ]
             del sel1
         
         ##--- convert the result into pandas dataframe
-        L_ion = pd.DataFrame(L_ion, columns = ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'])
+        L_ion = pd.DataFrame(L_ion, columns = ['id', 'mol', 'type', 'ux', 'uy', 'uz'])
         return L_ion
     
-    def read_ion(self, atoms, iontype, ionspermol=1, dropuxyz = False):
+    def read_ion(self, atoms, iontype, ionspermol=1):
+        # read in lammps 'fix' file or any unwrapped COM data directly.
         L_ion = pd.DataFrame(atoms, columns = ['id','ux','uy','uz']) 
-        # The columns are from lammps 'fix' output.
-        L_ion.loc[:,'ix'] = 0 
-        L_ion.loc[:,'iy'] = 0 
-        L_ion.loc[:,'iz'] = 0
-        for (idx, row) in L_ion.iterrows():
-            if row['ux'] > self.xhi:
-                L_ion.loc[idx, 'ix'] = int( (row['ux']-self.xlo) / self.deltaX)
-            if row['ux'] < self.xlo:
-                L_ion.loc[idx, 'ix'] = int( (row['ux']-self.xhi) / self.deltaX)
-            if row['uy'] > self.yhi:
-                L_ion.loc[idx, 'iy'] = int( (row['uy']-self.ylo) / self.deltaY)
-            if row['uy'] < self.ylo:
-                L_ion.loc[idx, 'iy'] = int( (row['uy']-self.yhi) / self.deltaY)
-            if row['uz'] > self.zhi:
-                L_ion.loc[idx, 'iz'] = int( (row['uz']-self.zlo) / self.deltaZ)
-            if row['uz'] < self.zlo:
-                L_ion.loc[idx, 'iz'] = int( (row['uz']-self.zhi) / self.deltaZ)
         L_ion['type'] = iontype
         # write mol id
         col_mol = []
@@ -115,26 +103,15 @@ class oneframe():
             for j in range(0, ionspermol):
                 col_mol += [imol]
         L_ion['mol'] = col_mol
-        ##
-        L_ion['x'] = L_ion['ux'] - L_ion['ix']*self.deltaX
-        L_ion['y'] = L_ion['uy'] - L_ion['iy']*self.deltaY
-        L_ion['z'] = L_ion['uz'] - L_ion['iz']*self.deltaZ
         # L_ion.reset_index(drop=True)
         # L_ion.loc['id'] = L_ion.index+1
-        if dropuxyz:
-            return L_ion.drop(columns= ['ux', 'uy' ,'uz'])
-        else:
-            return L_ion
+        return L_ion
 
-    def find_asso(self, L_im, L_mo, r_cut, do_stat = 1, diff_L=1):
-        # l_im is the mother list, bring l_mo elements into l1
-        if not diff_L:
-            print('same list not developed...')
-            return 1
-       # prepare two lists for the mobile ions: associate atoms and associated molecules.
+    def find_asso(self, L_im, L_mo, r_cut, clean = 1):
+        # input must have wrapped data x y z
+        # prepare two lists for the mobile ions: associate atoms and associated molecules.
         L_mo_asso_atom = []
         L_mo_asso_mol  = []
-        #
         # iter over rows (all the mobile ions)
         for (idx,row_mo) in L_mo.iterrows():
             coor1 = row_mo[['x','y','z']].values
@@ -142,10 +119,11 @@ class oneframe():
             # if each of them associate with the current mobile ion
             L_im_if_asso_2_mo = []
             #
-            # Loop over all immobile ions, 
+            # Loop over all immobile ions,
             # check if each of them associate with the current mobile ion
             # if yes, mark 1
             # if no, mark 0
+
             for coor2 in L_im[['x', 'y','z']].values:
                 if ifconn(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ], r_cut):
                     L_im_if_asso_2_mo.append(1)
@@ -165,52 +143,50 @@ class oneframe():
         L_mo['asso_mol']  = L_mo_asso_mol
         
         # stat
-        if do_stat:
-            # create two arrays for number of asso. atoms and number of asso. chains for all the mobile ions
-            N_asso_atom = np.array([]).astype(int)
-            N_asso_mol  = np.array([]).astype(int)
-            for (index,row) in L_mo.iterrows():
-                N_asso_atom = np.append(N_asso_atom,  len(row['asso_atom']) ) # append the number of asso. atom for each mobile ion
-                N_asso_mol  = np.append(N_asso_mol ,  len(row['asso_mol' ]) ) # append the number of asso. chain for each mobile ion
-            hist_asso_im_atom = np.histogram( N_asso_atom , bins=np.arange(0, max( N_asso_atom) +2 ) ) # histo
-            hist_asso_im_mol  = np.histogram( N_asso_mol  , bins=np.arange(0, max( N_asso_mol ) +2 ) ) # histo
-            self.hist_asso_im_atom = hist_asso_im_atom
-            self.hist_asso_im_mol  = hist_asso_im_mol
-            return  N_asso_atom, N_asso_mol
-        else:
-            return 0
+        # create two arrays for number of asso. atoms and number of asso. chains for all the mobile ions
+        N_asso_atom = np.array([]).astype(int)
+        N_asso_mol  = np.array([]).astype(int)
+        for (index,row) in L_mo.iterrows():
+            N_asso_atom = np.append(N_asso_atom,  len(row['asso_atom']) ) # append the number of asso. atom for each mobile ion
+            N_asso_mol  = np.append(N_asso_mol ,  len(row['asso_mol' ]) ) # append the number of asso. chain for each mobile ion
+        hist_asso_im_atom = np.histogram( N_asso_atom , bins=np.arange(0, max( N_asso_atom) +2 ) ) # histo
+        hist_asso_im_mol  = np.histogram( N_asso_mol  , bins=np.arange(0, max( N_asso_mol ) +2 ) ) # histo
+        self.hist_asso_im_atom = hist_asso_im_atom
+        self.hist_asso_im_mol  = hist_asso_im_mol
+        if clean:
+            L_mo = L_mo.drop(['asso_atom', 'asso_mol'], axis = 1)
+            L_im = L_im.drop(['if_asso'], axis = 1)
+        return  N_asso_atom, N_asso_mol
 
     def delete_full(self):  # release mem
         del self.L_atom
 
-    def export_pdb(self, filename, L_ion, Nth_frame=1):
-        f = open(filename, 'a')
+    def export_pdb(self, f, L_sel, Nth_frame):
         f.write('REMARK\n'*3)
         f.write('CRYST1'+ '%9.3f'%self.deltaX +'%9.3f'%self.deltaY +'%9.3f'%self.deltaZ + '%7.2f'%self.alpha +'%7.2f'%self.beta+'%7.2f'%self.gama+' P 1           1\n')
         f.write('MODEL ' + ' '*4 + '%4d' %Nth_frame +'\n')
-        for (idx, row) in L_ion.iterrows():
-            if len(row['type']) == 1:
-                Tatom = ' '+str(row['type'])+' '*2
-            elif len(row['type']) == 2:
-                Tatom = str(row['type']) +' '*2
-            elif len(row['type']) == 3:
-                Tatom = str(row['type']) +' '
-            elif len(row['type']) == 4:
-                Tatom = str(row['type'])
-            else:
-                Tatom = str(row['type'])
+        for (idx, row) in L_sel.iterrows():
+            Tatom = str(row['type'])
+            if len( Tatom ) == 1:
+                Tatom = Tatom +' '*3
+            elif len( Tatom ) == 2:
+                Tatom = Tatom +' '*2
+            elif len( Tatom ) == 3:
+                Tatom = Tatom +' '
 
-            f.write('ATOM  '+ '%5d' %row['atom'] + ' ' \
-            + '%4s' %Tatom + ' ' + 'ION' + '  ' \
-            + '%4d' %row['mol']+ '    ' \
-            + '%8.3f' %row['x']  + '%8.3f' %row['y'] + '%8.3f' %row['z'] \
-            + ' '*24 +'\n')
+            f.write('ATOM  '+ '%5d' %row['id'] + ' ' \
+                + '%4s' %Tatom + ' ' + 'ION' + '  ' \
+                + '%4d' %row['mol']+ '    ' \
+                + '%8.3f' %row['ux']  + '%8.3f' %row['uy'] + '%8.3f' %row['uz'] \
+                + ' '*24 +'\n')
+                # pdb records unwrapped data
         f.write('TER\n')
         f.write('ENDMDL\n')
-        f.close()
-        return 0
 
-    def export_lmptrj(self, f, L_sel):  # f is the file object, i.e., pointer
+    def export_lmptrj(self, f, L_sel, col = \
+                        ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'] ):
+        # f is the file object, i.e., pointer
+        # the default columns are the wrapped data, vmd cannot rerad unwrapped-only lmp
         # write head:
         f.write('ITEM: TIMESTEP\n')
         f.write('%d' %self.time +'\n')
@@ -221,9 +197,10 @@ class oneframe():
         f.write('{:.5f}    {:.5f}\n'.format(self.xlo,self.xhi) )
         f.write('{:.5f}    {:.5f}\n'.format(self.ylo,self.yhi) )
         f.write('{:.5f}    {:.5f}\n'.format(self.zlo,self.zhi) )
-        f.write('ITEM: ATOMS '+ ' '.join(L_sel.columns.values.astype(str)) +'\n'  )
+        f.write('ITEM: ATOMS '+ ' '.join(col) +'\n'  )
+        #f.write('ITEM: ATOMS '+ ' '.join(L_sel.columns.values.astype(str)) +'\n'  )
         # write atom body
-        L_sel.to_csv(f, sep=' ', float_format='%.5f', header=False, index=False)
+        L_sel.loc[:,col].to_csv(f, sep=' ', float_format='%.5f', header=False, index=False)
     
     def hoppingtype_AN(self, prev): #current and prev snap
         asso_type = []
@@ -241,10 +218,7 @@ class oneframe():
         hist_hop_type = np.histogram(asso_type, bins=[1,2,3,4,5])
 
         return hist_hop_type # not normalized
-    
-    def unwrap(self, L_ion): # L_ion is a pointer
-        L_ion['ux'], L_ion['uy'], L_ion['uz'] = unwrap(L_ion, [[self.xlo, self.xhi], [self.ylo, self.yhi], [self.zlo, self.zhi]])
-
+   
     def nongauss(self,L_mobile_ions,ref): # non gaussian parameter data point
         return NGP(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
     
@@ -323,6 +297,10 @@ class oneframe():
 
 if __name__ == '__main__':
     import time as timer
+    ##--- timer starts ---
+    start = timer.perf_counter()
+
+    """
     ##--- read-in the whole file ---
     filename = '../400K_corrected_lmp_B/VImC2_every100ps_0-50ns.lammpstrj'
     ANfile = '../400K_corrected_lmp_B/com_AN_every10ps_0-10ns.dat'
@@ -330,9 +308,6 @@ if __name__ == '__main__':
     f = open(filename, 'r')
     fa = open(ANfile, 'r')
     fc = open(CTfile, 'r')
-    ##--- timer starts ---
-    start = timer.perf_counter()
-
     ##--- initialize a data object ---
     onef = oneframe()
     ###--- write box dim manually ---
@@ -392,6 +367,7 @@ if __name__ == '__main__':
     ###--- van hove ---
     print('van hove self, secf - onef: ', secf.vanhove_s(secf.L_AN, onef.L_AN, 25.0, 0.1))
     print('van hove distinct, secf - onef: ', secf.vanhove_d(secf.L_AN, onef.L_AN, 25.0, 0.1))
+    """
     ##--- timer ends ---
     end = timer.perf_counter()
     print('time used: ', end-start)

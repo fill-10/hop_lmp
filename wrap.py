@@ -28,9 +28,9 @@ def wrap(atom_group, box ):
         if row['uz'] < zlo:
             atom_group.loc[idx, 'iz'] = int( (row['uz']-zhi) / deltaZ)
 
-    atom_group['x'] = atom_group['ux'] - atom_group['ix']*self.deltaX
-    atom_group['y'] = atom_group['uy'] - atom_group['iy']*self.deltaY
-    atom_group['z'] = atom_group['uz'] - atom_group['iz']*self.deltaZ
+    atom_group['x'] = atom_group['ux'] - atom_group['ix']*deltaX
+    atom_group['y'] = atom_group['uy'] - atom_group['iy']*deltaY
+    atom_group['z'] = atom_group['uz'] - atom_group['iz']*deltaZ
     # all the above are pointer operatoins.
     # no need to return any value, actually.
     return atom_group['x'].values, atom_group['y'].values, atom_group['z'].values
