@@ -2,10 +2,10 @@ from class_data import data
 if __name__ == '__main__':
     import time as timer
     ##--- read-in the whole file ---
-    pdbfilename = '../nvtprod_every1ns_00-50ns.pdb' # hopping calculation
+    pdbfilename = '../nvtprod_every100ps_00-10ns.pdb' # hopping calculation
     ##--- output general settings ---
     import numpy as np
-    fn_prefix = 'ImC5_00-50ns_'
+    fn_prefix = '../ImC5_00-10ns_'
     
     ##--- timer start ---
     start = timer.perf_counter()
