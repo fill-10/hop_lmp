@@ -1,10 +1,10 @@
 from class_data import data
 if __name__ == '__main__':
     import time as timer
-    pdbfilename = '../nvtlong_every100ps_0-300ns.pdb' # rdf calculation
+    pdbfilename = '../nongauss_every100ps.pdb' # rdf calculation
     ##--- output general settings ---=
     import numpy as np
-    fn_prefix = 'BrC5_0-50ns_lmptrj_'
+    fn_prefix = '../ImC5_'
     
     ##--- timer start ---
     start = timer.perf_counter()
@@ -22,9 +22,9 @@ if __name__ == '__main__':
  
     ##--- non gaussian parameter ---
     ##--- unwrap anion coordinates --- # may not necessary for some cases
-    d1.unwrapall_AN()  # no need to unwrap if read from fix file and uxyz not deleted
-    print('unwrapped data')
-    timestep_col, nongauss_col = d1.nongauss_AN_avg(1, 100,1000) # start_interval = 1 frame,  100ps/frame, maxattemp =500 by default
+    #d1.unwrapall_AN()  # do not unwrap if read from pdb. pdb has unwrapped data already.
+    #print('unwrapped data')
+    timestep_col, nongauss_col = d1.nongauss_AN_avg(1, 100, 1000) # start_interval = 1 frame,  100ps/frame, maxattemp =500 by default
     print('non gauss calculated')
     
     ##--- timer stop ---

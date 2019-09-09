@@ -252,7 +252,7 @@ class data(object):
             self.allframes[i].unwrap(self.allframes[i].L_CT)
 
 
-    def find_asso_AN_CT(self, r_cut, skip=0, calc_stat=True):
+    def find_asso_AN_CT(self, r_cut, skip=0, clean = 0 ):
         counter = 0
         # save all frames stats together
         Total_N_asso_atom = np.array([]).astype(int)
@@ -264,7 +264,7 @@ class data(object):
                 counter +=1
                 continue
             if len(frame.L_AN) and len(frame.L_CT):
-                N_asso_atom_1f, N_asso_mol_1f = frame.find_asso(frame.L_CT, frame.L_AN, r_cut, calc_stat )
+                N_asso_atom_1f, N_asso_mol_1f = frame.find_asso(frame.L_CT, frame.L_AN, r_cut, clean )
                 ##--- mount to the total list ---
                 Total_N_asso_atom = np.append(Total_N_asso_atom, N_asso_atom_1f)
                 Total_N_asso_mol  = np.append(Total_N_asso_mol , N_asso_mol_1f )
@@ -323,6 +323,19 @@ class data(object):
             #print(len(nongauss_point))
             nongauss_data.append( np.average(nongauss_point))
         return time_column, nongauss_data
+    
+    ##--- averaged msd ---
+    def msd_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp=500):
+        Nframe = len( self.allframes )
+        time_column = []
+        msd_data = []
+        for i in range(start_interval, Nframe):
+            time_column.append( i*fixsave_every )
+            msd_point = [] 
+            for j in range(i, min(i+maxattemp,Nframe), 1):
+                msd_point.append( self.allframes[j].msd(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
+            msd_data.append( np.average(msd_point))
+        return time_column, msd_data
 
     ##--- averaged van hove self ---
     def vanhove_s_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):

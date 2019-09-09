@@ -5,6 +5,7 @@ from read_1_frame import *
 from read_1_fix import read_1_fix
 from COM import COM
 from NGP import NGP
+from MSD import MSD
 from VANHOVE import *
 from pbc_dist import *
 from unwrap import unwrap
@@ -107,57 +108,6 @@ class oneframe():
         # L_ion.loc['id'] = L_ion.index+1
         return L_ion
 
-    def find_asso(self, L_im, L_mo, r_cut, clean = 1):
-        # input must have wrapped data x y z
-        # prepare two lists for the mobile ions: associate atoms and associated molecules.
-        L_mo_asso_atom = []
-        L_mo_asso_mol  = []
-        # iter over rows (all the mobile ions)
-        for (idx,row_mo) in L_mo.iterrows():
-            coor1 = row_mo[['x','y','z']].values
-            # prepare a list(column) of flags for immobile ions
-            # if each of them associate with the current mobile ion
-            L_im_if_asso_2_mo = []
-            #
-            # Loop over all immobile ions,
-            # check if each of them associate with the current mobile ion
-            # if yes, mark 1
-            # if no, mark 0
-
-            for coor2 in L_im[['x', 'y','z']].values:
-                if ifconn(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ], r_cut):
-                    L_im_if_asso_2_mo.append(1)
-                else:
-                    L_im_if_asso_2_mo.append(0)
-            #
-            # attach this temporary column to the original dataframe,
-            # this column is updated every time when looping over all mobile ions
-            L_im['if_asso'] = L_im_if_asso_2_mo
-            c_mo_asso_atom = L_im[L_im['if_asso'] !=0 ]['id'].values#.tolist()
-            c_mo_asso_mol  = np.unique(L_im[L_im['if_asso'] !=0 ]['mol'].values)
-            L_mo_asso_atom.append( c_mo_asso_atom  )
-            L_mo_asso_mol.append(  c_mo_asso_mol   )
-            #print(c_mo_asso_atom)
-            #print(c_mo_asso_mol)
-        L_mo['asso_atom'] = L_mo_asso_atom
-        L_mo['asso_mol']  = L_mo_asso_mol
-        
-        # stat
-        # create two arrays for number of asso. atoms and number of asso. chains for all the mobile ions
-        N_asso_atom = np.array([]).astype(int)
-        N_asso_mol  = np.array([]).astype(int)
-        for (index,row) in L_mo.iterrows():
-            N_asso_atom = np.append(N_asso_atom,  len(row['asso_atom']) ) # append the number of asso. atom for each mobile ion
-            N_asso_mol  = np.append(N_asso_mol ,  len(row['asso_mol' ]) ) # append the number of asso. chain for each mobile ion
-        hist_asso_im_atom = np.histogram( N_asso_atom , bins=np.arange(0, max( N_asso_atom) +2 ) ) # histo
-        hist_asso_im_mol  = np.histogram( N_asso_mol  , bins=np.arange(0, max( N_asso_mol ) +2 ) ) # histo
-        self.hist_asso_im_atom = hist_asso_im_atom
-        self.hist_asso_im_mol  = hist_asso_im_mol
-        if clean:
-            L_mo = L_mo.drop(['asso_atom', 'asso_mol'], axis = 1)
-            L_im = L_im.drop(['if_asso'], axis = 1)
-        return  N_asso_atom, N_asso_mol
-
     def delete_full(self):  # release mem
         del self.L_atom
 
@@ -201,7 +151,57 @@ class oneframe():
         #f.write('ITEM: ATOMS '+ ' '.join(L_sel.columns.values.astype(str)) +'\n'  )
         # write atom body
         L_sel.loc[:,col].to_csv(f, sep=' ', float_format='%.5f', header=False, index=False)
-    
+
+    def find_asso(self, L_im, L_mo, r_cut, clean = 0):
+        # input must have wrapped data x y z
+        # prepare two lists for the mobile ions: associate atoms and associated molecules.
+        L_mo_asso_atom = []
+        L_mo_asso_mol  = []
+        # iter over rows (all the mobile ions)
+        for (idx,row_mo) in L_mo.iterrows():
+            coor1 = row_mo[['x','y','z']].values
+            # prepare a list(column) of flags for immobile ions
+            # if each of them associate with the current mobile ion
+            L_im_if_asso_2_mo = []
+            #
+            # Loop over all immobile ions,
+            # check if each of them associate with the current mobile ion
+            # if yes, mark 1
+            # if no, mark 0
+
+            for coor2 in L_im[['x', 'y','z']].values:
+                if ifconn(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ], r_cut):
+                    L_im_if_asso_2_mo.append(1)
+                else:
+                    L_im_if_asso_2_mo.append(0)
+            #
+            # attach this temporary column to the original dataframe,
+            # this column is updated every time when looping over all mobile ions
+            L_im['if_asso'] = L_im_if_asso_2_mo
+            c_mo_asso_atom = L_im[L_im['if_asso'] !=0 ]['id'].values#.tolist()
+            c_mo_asso_mol  = np.unique(L_im[L_im['if_asso'] !=0 ]['mol'].values)
+            L_mo_asso_atom.append( c_mo_asso_atom  )
+            L_mo_asso_mol.append(  c_mo_asso_mol   )
+            #print(c_mo_asso_atom)
+            #print(c_mo_asso_mol)
+        L_mo['asso_atom'] = L_mo_asso_atom
+        L_mo['asso_mol']  = L_mo_asso_mol
+        
+        # stat
+        # create two arrays for number of asso. atoms and number of asso. chains for all the mobile ions
+        N_asso_atom = np.array([]).astype(int)
+        N_asso_mol  = np.array([]).astype(int)
+        for (index,row) in L_mo.iterrows():
+            N_asso_atom = np.append(N_asso_atom,  len(row['asso_atom']) ) # append the number of asso. atom for each mobile ion
+            N_asso_mol  = np.append(N_asso_mol ,  len(row['asso_mol' ]) ) # append the number of asso. chain for each mobile ion
+        hist_asso_im_atom = np.histogram( N_asso_atom , bins=np.arange(0, max( N_asso_atom) +2 ) ) # histo
+        hist_asso_im_mol  = np.histogram( N_asso_mol  , bins=np.arange(0, max( N_asso_mol ) +2 ) ) # histo
+        self.hist_asso_im_atom = hist_asso_im_atom # save stats as attributes
+        self.hist_asso_im_mol  = hist_asso_im_mol
+        if clean:
+            L_mo = L_mo.drop(['asso_atom', 'asso_mol'], axis = 1)
+            L_im = L_im.drop(['if_asso'], axis = 1)
+        return  N_asso_atom, N_asso_mol # return numbers   
     def hoppingtype_AN(self, prev): #current and prev snap
         asso_type = []
         for ind, row in self.L_AN.iterrows():
@@ -218,7 +218,10 @@ class oneframe():
         hist_hop_type = np.histogram(asso_type, bins=[1,2,3,4,5])
 
         return hist_hop_type # not normalized
-   
+    
+    def msd(self, L_mobile_ions, ref):
+        return MSD(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
+
     def nongauss(self,L_mobile_ions,ref): # non gaussian parameter data point
         return NGP(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
     
