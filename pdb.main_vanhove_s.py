@@ -2,10 +2,10 @@ from class_data import data
 if __name__ == '__main__':
     import time as timer
 
-    pdbfilename = '../vanhove580_2200.pdb' # vanhove_s calculation
+    pdbfilename = '../vanhove_every1300ps.pdb' # vanhove_s calculation
     ##--- output general settings ---=
     import numpy as np
-    fn_prefix = 'BrC5_pdb_'
+    fn_prefix = '../ImC5_'
     
     ##--- timer start ---
     start = timer.perf_counter()
