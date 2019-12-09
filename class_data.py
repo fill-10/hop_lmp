@@ -388,3 +388,33 @@ class data(object):
                 pns_list += [ weighted_pns_single/total_counted_ion]
                 print(pns_list)
         return np.mean(pns_list, axis=0), np.arange(1, maxlength+1)
+
+    def CtSt(self,  r_cut, skip = 0, resol = 10, maxattemp= 500): # resolution = realtime/frame
+        Nframe = len( self.allframes )
+        L_all_ht = []
+        for i in range(0, Nframe, skip+1):
+            L_all_ht += [ self.allframes[i].ht(r_cut) ]
+
+        L_all_ht = np.array(L_all_ht) # save in numpy to speed up
+
+        # double loop average
+        time_column = [0]
+        Ct_column = [1]
+        St_column = [1]
+        for j in range(1, L_all_ht.shape[0]): # loop over time intervals
+            time_column.append( j*resol* (skip+1)  )
+            Ct_raw = []
+            St_raw = []
+
+            for k in range(j, min( L_all_ht.shape[0], j+maxattemp) ):  # loop over different start frames
+                Ct_raw += [ np.sum(  np.all(L_all_ht[[k-j,k],:] > 0 , axis = 0).astype(int) )/np.sum( L_all_ht[k-j,:] ) ]
+                St_raw += [ np.sum(  np.all(L_all_ht[k-j:k+1,:] > 0 , axis = 0).astype(int) )/np.sum( L_all_ht[k-j,:] ) ]
+
+            Ct_column.append( np.mean( Ct_raw)  )
+            St_column.append( np.mean( St_raw)  )
+        # TODO caluclate tau_c and tau_s
+        from scipy.optimize import curve_fit
+        
+
+        return time_column, Ct_column, St_column
+

@@ -295,82 +295,9 @@ class oneframe():
             print('need to find fast atoms!')
             return -1
 
-
-##-----------------------------
-
-if __name__ == '__main__':
-    import time as timer
-    ##--- timer starts ---
-    start = timer.perf_counter()
-
-    """
-    ##--- read-in the whole file ---
-    filename = '../400K_corrected_lmp_B/VImC2_every100ps_0-50ns.lammpstrj'
-    ANfile = '../400K_corrected_lmp_B/com_AN_every10ps_0-10ns.dat'
-    CTfile = '../400K_corrected_lmp_B/com_CT_every10ps_0-10ns.dat'
-    f = open(filename, 'r')
-    fa = open(ANfile, 'r')
-    fc = open(CTfile, 'r')
-    ##--- initialize a data object ---
-    onef = oneframe()
-    ###--- write box dim manually ---
-    onef.update_pbc([[0.0,55.8983],[0.02,55.9183],[0.01,55.9083]])
-    ###--- read ions from lammps 'fix' --
-    anions, Nanion, time, pos = read_1_fix(fa)
-    cations, Ncations, time, pos = read_1_fix(fc)
-    ###--- organize ions in to object instances ---
-    onef.L_CT = onef.read_ion(cations, 2, 40)
-    onef.L_AN = onef.read_ion(anions, 1, 1)
-    onef.L_CT.loc[:,'mol'] += max(onef.L_AN['mol'])
-    
-    ##--- read second frame ---
-    secf = oneframe()
-    secf.update_pbc([[0.0,55.8983],[0.02,55.9183],[0.01,55.9083]])
-    anions, Nanion, time, pos = read_1_fix(fa)
-    cations, Ncations, time, pos = read_1_fix(fc)
-    secf.L_CT = onef.read_ion(cations, 2, 40)
-    secf.L_AN = onef.read_ion(anions, 1, 1)
-    secf.L_CT.loc[:,'mol'] += max(secf.L_AN['mol'])
-    
-    ###--- read first frame again from lammps 'trj' ---
-    thirdf = oneframe()
-    time, Natom, box, cols, atoms, position  = read_1_lmp(f)
-    thirdf.load_snap(time, box, atoms, cols)
-    # select ions
-    anion_args = (range(1, 1+400), 1, 1, 1, [], 15, 'sel[:]' )
-    thirdf.L_AN = thirdf.ion_gen(*anion_args)
-    thirdf.L_CT = thirdf.ion_gen(range(411, 411+400),2, 1, 1, [], 8, "sel[:]")
-    # release mem
-    del thirdf.L_atom
-    # correct id
-    thirdf.L_CT['id'] += 400
-    # correct mol
-    thirdf.L_CT['mol'] = 0
-    NDeg_Poly_CT = 40
-    NIon_permon = 1
-    Nmol_CT = 10
-    for j0 in range(0, Nmol_CT):
-        for j1 in range(j0*NDeg_Poly_CT*NIon_permon, (j0+1)*NDeg_Poly_CT*NIon_permon):
-            thirdf.L_CT.loc[j1, 'mol'] = j0+1+thirdf.L_AN.shape[0]
-    
-    ##--- export ions to lammpstrj ------
-    onef.export_lmptrj(open('one_'+str(onef.time)+'.lammpstrj','w'), pd.concat([onef.L_AN, onef.L_CT], ignore_index=True) )
-    thirdf.export_lmptrj(open('third_'+str(onef.time)+'.lammpstrj','w' ), pd.concat([thirdf.L_AN, thirdf.L_CT], ignore_index=True) )
-    
-    ##--- find associating ions and mols for 2 consequent frames ---
-    hist_atom_NCT, hist_mol_NCT =onef.find_asso(onef.L_CT,onef.L_AN, 7.8)
-    hist_atom_NCT, hist_mol_NCT =secf.find_asso(secf.L_CT,secf.L_AN, 7.8)
-    print('acco_atoms: ', onef.hist_asso_im_atom, '\nacco_mols: ', onef.hist_asso_im_mol)
-    
-    ##--- calc hopping types for the 2 frames ---
-    print('one2second hop:', secf.hoppingtype_AN(onef)[0] )
-    
-    ###--- non gauss ---
-    print('non gauss data point,secf- onef: ',secf.nongauss(secf.L_AN, onef.L_AN))
-    ###--- van hove ---
-    print('van hove self, secf - onef: ', secf.vanhove_s(secf.L_AN, onef.L_AN, 25.0, 0.1))
-    print('van hove distinct, secf - onef: ', secf.vanhove_d(secf.L_AN, onef.L_AN, 25.0, 0.1))
-    """
-    ##--- timer ends ---
-    end = timer.perf_counter()
-    print('time used: ', end-start)
+    def ht(self, r_cut):
+        L_ht = []
+        for (idx_an, anion)in self.L_AN.iterrows():
+            for (idx_ct, cation) in self.L_CT.iterrows():
+                L_ht.append(  int(  ifconn(   [ anion['x'], anion['y'], anion['z'] ], [cation['x'], cation['y'], cation['z'] ], np.array([self.deltaX, self.deltaY,self.deltaZ]), r_cut ))   )
+        return L_ht
