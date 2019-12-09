@@ -3,11 +3,11 @@
 This package:
 1. reads in lammps trj into pandas dataframe and generate ions by centers of mass.
 2. reads in ions from lammps 'fix' output of 'COM'.
-3. calculates associating/coordinating counter ions/polymer chains per ion.
-4. categorizes hopping types of the moving ions.
-5. calcualtes non gaussian parameters for AN ions.
-6. output stats and lammps trj.
-7. can read lmptrj and pdb from gmx trjconv -pbc nojump.
+3. reads pdb from gmx trjconv -pbc nojump or -pbc whole.
+4. calculates associating/coordinating counter ions/polymer chains per ion.
+5. categorizes hopping types of the moving ions.
+6. calcualtes non gaussian parameter and mean square displacement for AN ions.
+7. output stats and lammps trj. 
 8. calculates van hove function.
 9. calculates intermittent time autocorrelation function and continous time autocorrelation function.
 10. calculates tau_c and tau_s from 9.
