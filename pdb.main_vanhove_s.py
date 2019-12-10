@@ -1,7 +1,7 @@
 from class_data import data
 if __name__ == '__main__':
     import time as timer
-    pdbfilename = '../nongauss_every100ps.pdb' # vanhove_s calculation
+    pdbfilename = '../nongauss_every10ps_00-50ns.pdb' # vanhove_s calculation
     ##--- output general settings ---=
     import numpy as np
     fn_prefix = '../AmC2_'
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     ##--- van hove self ---
     #d1.unwrapall_AN()  # no need to unwrap if read from fix file and uxyz not deleted
     #print('unwrapped data')
-    dist_col, vanhove_s_col, fpi_r2_vanhove_s_col = d1.fpi_r2_vanhove_s_AN_avg(12, 25.0, 0.1) # t*=1200 ps, so interval*=12
+    dist_col, vanhove_s_col, fpi_r2_vanhove_s_col = d1.fpi_r2_vanhove_s_AN_avg(35, 25.0, 0.1, 5) # t*=350 ps, so interval*=35, skip = 5 frames (default skip = 0)
     print('van hove self calculated')
     ##--- timer stop ---
     stop = timer.perf_counter()
