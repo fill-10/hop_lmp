@@ -389,32 +389,56 @@ class data(object):
                 print(pns_list)
         return np.mean(pns_list, axis=0), np.arange(1, maxlength+1)
 
-    def CtSt(self,  r_cut, skip = 0, resol = 10, maxattemp= 500): # resolution = realtime/frame
+    def ht_gen(self, r_cut, skip=0):
+        # generate ht for each frame 
+        # skip = skip this number of frames
+        # to speed up: separate ht and Ct and St
         Nframe = len( self.allframes )
         L_all_ht = []
         for i in range(0, Nframe, skip+1):
             L_all_ht += [ self.allframes[i].ht(r_cut) ]
+        self.L_all_ht = np.array(L_all_ht) # save as a class attribute as np.array
 
-        L_all_ht = np.array(L_all_ht) # save in numpy to speed up
-
+    def Ct(self, resol, maxattemp = 500):
+        # no check
         # double loop average
-        time_column = [0]
-        Ct_column = [1]
-        St_column = [1]
-        for j in range(1, L_all_ht.shape[0]): # loop over time intervals
-            time_column.append( j*resol* (skip+1)  )
+        time_column = []
+        Ct_column = []
+        for j in range(1, self.L_all_ht.shape[0]): # loop over time intervals
+            time_column.append( j*resol )
             Ct_raw = []
-            St_raw = []
-
-            for k in range(j, min( L_all_ht.shape[0], j+maxattemp) ):  # loop over different start frames
-                Ct_raw += [ np.sum(  np.all(L_all_ht[[k-j,k],:] > 0 , axis = 0).astype(int) )/np.sum( L_all_ht[k-j,:] ) ]
-                St_raw += [ np.sum(  np.all(L_all_ht[k-j:k+1,:] > 0 , axis = 0).astype(int) )/np.sum( L_all_ht[k-j,:] ) ]
+            N_inter_avail =  self.L_all_ht.shape[0] - j
+            try:
+                loopstep = max(1,  int( ( N_inter_avail-1 ) / (maxattemp-1)  ) )
+            except:
+                loopstep = 1
+            loopstop = self.L_all_ht.shape[0]
+            if loopstep == 1 :
+                loopstop = min( self.L_all_ht.shape[0], j + maxattemp )
+            for k in range( j, loopstop, loopstep ):
+            # loop over different start frames
+                Ct_raw += [ np.sum(  np.all(self.L_all_ht[[k-j,k],:] > 0 , axis = 0).astype(int) )/np.sum( self.L_all_ht[k-j,:] ) ]
 
             Ct_column.append( np.mean( Ct_raw)  )
+        return time_column, Ct_column
+    
+    def St(self, resol,  maxattemp = 500):
+        time_column = []
+        St_column = []
+        for j in range(1, self.L_all_ht.shape[0]):
+            time_column.append( j*resol )
+            St_raw = []
+            N_inter_avail =  self.L_all_ht.shape[0] - j
+            try:
+                loopstep = max(1,  int( ( N_inter_avail-1 ) / (maxattemp-1)  ) )
+            except:
+                loopstep = 1
+            loopstop = self.L_all_ht.shape[0]
+            if loopstep == 1 :
+                loopstop = min( self.L_all_ht.shape[0], j + maxattemp )
+            for k in range( j, loopstop, loopstep ):
+            # loop over different start frames
+                St_raw += [ np.sum(  np.all(self.L_all_ht[k-j:k+1,:] > 0 , axis = 0).astype(int) )/np.sum( self.L_all_ht[k-j,:] ) ]
             St_column.append( np.mean( St_raw)  )
-        # TODO caluclate tau_c and tau_s
-        from scipy.optimize import curve_fit
-        
-
-        return time_column, Ct_column, St_column
+        return time_column, St_column
 
