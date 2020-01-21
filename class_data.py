@@ -442,3 +442,81 @@ class data(object):
             St_column.append( np.mean( St_raw)  )
         return time_column, St_column
 
+    def bond_stat(self, sel1_kw, sel2_kw, bond_bins= np.arange(0, 5, 0.1), skip = 0):
+        Nframe = len( self.allframes)
+        try:
+            binsize = bond_bins[1] -bond_bins[0]
+        except:
+            binsize = 0.1
+        bond_hist = np.array([])
+        for i in range(0, Nframe, skip+1):
+            # select sel1 and sel2: bond_atom_1 list ans bond_atom_2 list
+            sel1 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel1_kw )
+            sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel2_kw )
+            L_b_2 = self.allframes[i].bond_uw(sel1, sel2)
+            c_hist, c_bins = np.histogram(L_b_2, bins=bond_bins)
+            c_hist = c_hist/np.sum(c_hist)
+            if bond_hist.shape[0]:
+                bond_hist = np.vstack( (bond_hist, c_hist ) )
+            else:
+                bond_hist = c_hist
+        return np.mean(bond_hist, axis=0), bond_bins[:-1] + binsize/2
+
+    def angle_stat( self, sel1_kw, sel2_kw, sel3_kw, \
+                    angle_bins=np.arange(0,180,1), skip=0):
+        Nframe = len( self.allframes)
+        try:
+            binsize = angle_bins[1] - angle_bins[0]
+        except:
+            binsize = 1.0
+        angle_hist = np.array([])
+        for i in range(0, Nframe, skip+1):
+            sel1 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel1_kw )
+            sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel2_kw )
+            sel3 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel3_kw )
+            L_angle = np.arccos( self.allframes[i].angle_uw(sel1, sel2, sel3) )
+            # type(L_angle)  =  np.array( list  )
+            L_angle = L_angle/np.pi*180
+            c_hist, c_bins = np.histogram( L_angle, bins=angle_bins)
+            c_hist = c_hist/np.sum(c_hist)
+            if angle_hist.shape[0]:
+                angle_hist = np.vstack( (angle_hist, c_hist ) )
+            else:
+                angle_hist = c_hist
+        return np.mean(angle_hist, axis=0), angle_bins[:-1] + binsize/2
+
+    def dihed_stat( self, sel1_kw, sel2_kw, sel3_kw, sel4_kw, \
+                    dihed_bins=np.arange(0,180,1), skip=0):
+        Nframe = len( self.allframes)
+        try:
+            binsize = dihed_bins[1] - dihed_bins[0]
+        except:
+            binsize = 1.0
+        dihed_hist = np.array([])
+        for i in range(0, Nframe, skip+1):
+            sel1 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel1_kw )
+            sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel2_kw )
+            sel3 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel3_kw )
+            sel4 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel4_kw )
+            L_dihed = np.arccos( self.allframes[i].dihed_uw(sel1, sel2, sel3, sel4) )
+            # type(L_dihed)  =  np.array( list  )
+            L_dihed = L_dihed/np.pi*180
+            c_hist, c_bins = np.histogram( L_dihed, bins=dihed_bins)
+            c_hist = c_hist/np.sum(c_hist)
+            if dihed_hist.shape[0]:
+                dihed_hist = np.vstack( (dihed_hist, c_hist ) )
+            else:
+                dihed_hist = c_hist
+        return np.mean(dihed_hist, axis=0), dihed_bins[:-1] + binsize/2
+
+
+
