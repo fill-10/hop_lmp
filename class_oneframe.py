@@ -301,3 +301,72 @@ class oneframe():
             for (idx_ct, cation) in self.L_CT.iterrows():
                 L_ht.append(  int(  ifconn(   [ anion['x'], anion['y'], anion['z'] ], [cation['x'], cation['y'], cation['z'] ], np.array([self.deltaX, self.deltaY,self.deltaZ]), r_cut ))   )
         return L_ht
+
+    def selectatom(self, sourcelist, L_molid, ilocL_Ter, selrule):
+        L_select = []
+        for i in L_molid:
+            sel = sourcelist[ sourcelist['mol'] == i ].reset_index( drop=True )
+            sel = sel.drop(ilocL_Ter).reset_index( drop = True )
+            sel1 = eval(selrule)
+            if len(L_select):
+                L_select = L_select.append(sel1, ignore_index=True)
+            else:
+                L_select = sel1
+        return L_select
+
+    def bond_uw(self, sel1, sel2):
+        L_b_2 = []
+        for (idx1, row1) in sel1.iterrows():
+            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            blength = np.linalg.norm(coor1-coor2)
+            L_b_2.append(blength)
+        return L_b_2
+    
+    def angle_uw(self, sel1, sel2, sel3):
+        L_cos_a = []
+        for (idx1, row1) in sel1.iterrows():
+            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor3 = sel3.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            cos_angle = np.dot( (coor1-coor2 ), ( coor3-coor2 ) ) \
+                      / np.linalg.norm(coor1-coor2) /  np.linalg.norm( coor3-coor2)
+            L_cos_a.append(cos_angle)
+        return L_cos_a
+    def dihed_uw(self, sel1, sel2, sel3, sel4):
+        L_cos_d = []
+        for (idx1, row1) in sel1.iterrows():
+            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor3 = sel3.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor4 = sel4.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            b0 = coor1 - coor2
+            baxis = coor3 -coor2
+            b1 = coor4 - coor3
+            vaxis = baxis / np.linalg.norm( baxis )  # unit vector 
+            #
+            # For b0 and b1, get the component parallel to the axis.
+            v0 = b0 - np.dot(b0, vaxis) * vaxis
+            #  = b0 - component align with the axis
+            #  = component perpendicular to the axis
+            #
+            # Do the same thing on b1
+            v1 = b1 - np.dot(b1, vaxis) * vaxis
+            #
+            # v0 and v1 both perpendicular to the axis.
+            # Thus, they are in the plane which is perpendicular to the axis.
+            # Use dot product and arccos to determine the angle.
+            #
+            cos_dihedral = np.dot( v0, v1 )/ np.linalg.norm( v0 ) / np.linalg.norm( v1 )
+            # 
+            L_cos_d.append( cos_dihedral)
+            #
+        return L_cos_d
+
+        # Per my test, np.dot is 40 X faster than np.cross, 
+        # and 6 X faster than np.linalg.norm
+        # Faster function is always preferred.
+        # In numpy 1.14.2 or above, arccos is pretty good. 
+        # No problem with pi/2 or pi angles. 
+        # This implementation uses cos.
+        # No need to do cross product or arctan.
