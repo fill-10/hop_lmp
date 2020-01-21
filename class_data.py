@@ -310,29 +310,47 @@ class data(object):
             nongauss_data += [ self.allframes[i].nongauss(  self.allframes[i].L_AN , self.allframes[0].L_AN  ) ]
         return time_column, nongauss_data
     ##--- averaged non gaussian ---
-    def nongauss_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp = 500):
+    def nongauss_AN_avg(self, resol, maxattemp = 500):
         Nframe = len( self.allframes )
         time_column = []
         nongauss_data = []
-        for i in range(start_interval, Nframe):
-            #print(' ',i)
-            time_column.append( i*fixsave_every )
-            nongauss_point = [] 
-            for j in range(i, min(i+maxattemp,Nframe), 1):
+        for i in range(1, Nframe):
+            time_column.append( i*resol )
+            nongauss_point = []
+            N_inter_avail = Nframe - i
+            try:
+                loopstep = max(1, int( (N_inter_avail-1) / (maxattemp-1) ) )
+            except:
+                loopstep = 1
+            loopstop = Nframe
+            if loopstep == 1:
+                loopstop = min( Nframe, i + maxattemp )
+            for j in range(i, loopstop, loopstep):
                 nongauss_point.append( self.allframes[j].nongauss(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
             #print(len(nongauss_point))
             nongauss_data.append( np.average(nongauss_point))
         return time_column, nongauss_data
     
     ##--- averaged msd ---
-    def msd_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp=500):
+    #def msd_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp=500):
+    def msd_AN_avg(self, resol, maxattemp=500):
         Nframe = len( self.allframes )
         time_column = []
         msd_data = []
-        for i in range(start_interval, Nframe):
-            time_column.append( i*fixsave_every )
+        for i in range(1, Nframe): # loop over time intervals
+            time_column.append( i*resol )
             msd_point = [] 
-            for j in range(i, min(i+maxattemp,Nframe), 1):
+            N_inter_avail = Nframe - i
+            try:
+                loopstep = max(1, int( (N_inter_avail-1) / (maxattemp-1) ) )
+            except:
+                loopstep = 1
+            loopstop = Nframe
+            if loopstep == 1:
+                loopstop = min( Nframe, i + maxattemp )
+            #print('\n',  i,'*\n')
+            for j in range(i, loopstop, loopstep):
+                #print(j)
                 msd_point.append( self.allframes[j].msd(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
             msd_data.append( np.average(msd_point))
         return time_column, msd_data
