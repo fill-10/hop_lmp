@@ -25,12 +25,12 @@ if __name__ == '__main__':
     ##--- unwrap anion coordinates --- # may not necessary for some cases
     #d1.unwrapall_AN()  # do not unwrap if read from pdb. pdb has unwrapped data already.
     #print('unwrapped data')
-    timestep_col, nongauss_col = d1.nongauss_AN_avg(1, 10, 1000) # start_interval = 1 frame,  100ps/frame, maxattemp =500 by default
+    timestep_col, nongauss_col = d1.nongauss_AN_avg( 10, 1000 ) # 100ps/frame, maxattemp =500 by default
     print('non gauss calculated')
     
     ##--- MSD
 
-    timecol, msd_col  = d1.msd_AN_avg(1, 10, 1000)
+    timecol, msd_col  = d1.msd_AN_avg( 10, 1000 )
     print('MSD calculated')
 
 
