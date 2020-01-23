@@ -1,11 +1,10 @@
 from class_data import data
 if __name__ == '__main__':
     import time as timer
-    #pdbfilename = '../nongauss_every100ps.pdb' # rdf calculation
     pdbfilename = '../nongauss_every100ps.pdb'
     ##--- output general settings ---=
     import numpy as np
-    fn_prefix = '../AmC2_'
+    fn_prefix = '../AmC2_new_'
     
     ##--- timer start ---
     start = timer.perf_counter()
@@ -21,16 +20,16 @@ if __name__ == '__main__':
     #print(d1.allframes[0].L_AN) 
     print('last timestep read: ', d1.allframes[-1].time)
  
-    ##--- non gaussian parameter ---
     ##--- unwrap anion coordinates --- # may not necessary for some cases
     #d1.unwrapall_AN()  # do not unwrap if read from pdb. pdb has unwrapped data already.
     #print('unwrapped data')
-    timestep_col, nongauss_col = d1.nongauss_AN_avg( 100, 1000 ) # 100ps/frame, maxattemp =500 by default
+    
+    ##--- non gaussian parameter ---
+    time_col, nongauss_col = d1.nongauss_AN_avg(100, 800) # start_interval = 1 frame,  100ps/frame, maxattemp =500 by default
     print('non gauss calculated')
     
     ##--- MSD
-
-    timecol, msd_col  = d1.msd_AN_avg( 100, 1000 )
+    time1_col, msd_col  = d1.msd_AN_avg(100, 800)
     print('MSD calculated')
 
 
@@ -39,5 +38,5 @@ if __name__ == '__main__':
     print('time used in sec: ', stop-start)
 
     ##--- save non gaussian parameter
-    np.savetxt(    fn_prefix+'nongauss.dat', np.transpose( [timestep_col, nongauss_col] ), fmt=['%d', '%f'], header='time/ps, nongauss'      )
-    np.savetxt(    fn_prefix+'MSD.dat',      np.transpose( [timestep_col, msd_col]      ), fmt=['%d', '%f'], header='time/ps, msd'           )
+    np.savetxt(    fn_prefix+'nongauss.dat', np.transpose( [time_col, nongauss_col] ), fmt=['%d', '%f'], header='time/ps, nongauss'      )
+    np.savetxt(    fn_prefix+'MSD.dat',      np.transpose( [time1_col, msd_col]      ), fmt=['%d', '%f'], header='time/ps, msd'           )
