@@ -314,143 +314,28 @@ class data(object):
         Nframe = len( self.allframes )
         time_column = []
         nongauss_data = []
-        # initialize the loop control var:
-        loopstep = 0
-        loopstop = 0
         for i in range(1, Nframe):
-            #print('\n\n t = ',i)
             time_column.append( i*resol )
             nongauss_point = []
             N_inter_avail = Nframe - i
-            if maxattemp == 1: # special case
-                loopstep = -( Nframe - i ) # reverse loop
-                loopstop = i-1
-                secondround = 0
-            elif maxattemp-1 <= (N_inter_avail -1)/2:
-                loopstep = -int( ( N_inter_avail-1 ) / (maxattemp-1) )
-                loopstop = Nframe-1 + loopstep * (maxattemp-1) -1
-                secondround = 0
-            elif maxattemp >= N_inter_avail :
-                loopstep = -1
-                loopstop = i-1
-                secondround = 0
-            else:
-                # maxattemp is less than the available intervals
-                # but maxattemp is more to distribute than one out of two
-                # Do the loopstep = -2 first.
-                # Will be patched with more tries later.
-                loopstep = -2
-                loopstop = i-1
-                secondround =1 # flag for second round
-                #print('secondround= ' , secondround)
-                #
-            for j in range(Nframe-1, loopstop, loopstep):
-                #print(j)
-                # Loop in the reverse way.
-                # I assume that the tail of a trajectory is more equilibrated
-                # than the first few snapshots at the beginning.
-                # Reverse loop will give better quality of result.
-                # Include Nth frame (last).
-                # The frames are numbered as 0, 1, 2...Nframe -1
-                # So the for loop start from Nframe-1.
-                # i-1 th is the open end (not included).
+            for j in range(i, min(i+maxattemp,Nframe), 1):
                 nongauss_point.append( self.allframes[j].nongauss(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
-                #
-                #
-            # Patch the 'else:' case:
-            if secondround :
-                #
-                remain_attemp = maxattemp - np.ceil(N_inter_avail/2)
-                remain_inter  = int(N_inter_avail/2)
-                if remain_attemp == 1:
-                    loopstep =  -( Nframe -1 -i )
-                    loopstop = i-1
-                else:
-                    loopstep = -int(                                                \
-                                ( remain_inter - 1 ) / max( 1, remain_attemp - 1 )  \
-                                    ) * 2
-                    loopstop = Nframe-2 + loopstep * (remain_attemp-1) -1
-
-                # Find the loopstep in the rest of the intervals.
-                # *2 means that skip the already used intervals.
-                #
-                for j in range(Nframe-2, i-1, loopstep):
-                    #
-                    #print(j)
-                    nongauss_point.append(                                      \
-                        self.allframes[j].nongauss(                             \
-                            self.allframes[j].L_AN , self.allframes[j-i].L_AN   \
-                                                  )                             \
-                                         )
-            # Patch done!
-
+            #print(len(nongauss_point))
             nongauss_data.append( np.average(nongauss_point))
         return time_column, nongauss_data
     
     ##--- averaged msd ---
+    #def msd_AN_avg(self, start_interval=1, fixsave_every=10, maxattemp=500):
     def msd_AN_avg(self, resol, maxattemp=500):
         Nframe = len( self.allframes )
-        #
-        # initialize two columns
         time_column = []
         msd_data = []
-        # initialize the loop control var:
-        loopstep = 0
-        loopstop = 0
-        #
         for i in range(1, Nframe): # loop over time intervals
-            #print('\n\n t = ',i)
             time_column.append( i*resol )
             msd_point = [] 
             N_inter_avail = Nframe - i
-            #
-            # See the nongauss_AN_avg for details about the philosophy.
-            if maxattemp == 1: # special case
-                loopstep = -( Nframe - i ) # reverse loop
-                loopstop = i-1
-                secondround = 0
-            elif maxattemp-1 <= (N_inter_avail -1)/2:
-                loopstep = -int( ( N_inter_avail-1 ) / (maxattemp-1) )
-                loopstop = Nframe-1 + loopstep * (maxattemp-1) -1
-                secondround = 0
-            elif maxattemp >= N_inter_avail :
-                loopstep = -1
-                loopstop = i-1
-                secondround = 0
-            else:
-                loopstep = -2
-                loopstop = i-1
-                secondround =1 # flag for second round
-                # print('secondround= ', secondround)
-                #
-            for j in range(Nframe-1, loopstop, loopstep):
-                # print(j)
+            for j in range(i, min(i+maxattemp,Nframe), 1):
                 msd_point.append( self.allframes[j].msd(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
-                #
-                #
-            # Patch the 'else:' case:
-            if secondround :
-                #
-                remain_attemp = maxattemp - np.ceil(N_inter_avail/2)
-                remain_inter  = int(N_inter_avail/2)
-                if remain_attemp == 1:
-                    loopstep =  -( Nframe -1 -i )
-                    loopstop = i-1
-                else:
-                    loopstep = -int(                                                \
-                                ( remain_inter - 1 ) / max( 1, remain_attemp - 1 )  \
-                                    ) * 2
-                    loopstop = Nframe-2 + loopstep * (remain_attemp-1) -1
-
-                # Find the loopstep in the rest of the intervals.
-                # *2 means that skip the already used intervals.
-                #
-                for j in range(Nframe-2, i-1, loopstep):
-                    #
-                    #print(j)
-                    msd_point.append( self.allframes[j].msd(  self.allframes[j].L_AN , self.allframes[j-i].L_AN  ) )
-            # Patch done!
-
             msd_data.append( np.average(msd_point))
         return time_column, msd_data
 
@@ -461,9 +346,6 @@ class data(object):
         for i in range(0, Nframe - interval_star, skip+1):
             vanhove_s_point = self.allframes[i+interval_star].vanhove_s(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
             vanhove_s_raw.append(vanhove_s_point[0])
-        #print(vanhove_s_raw)
-        #print(np.mean(vanhove_s_raw, axis =0) )
-        #print(sum(np.mean(vanhove_s_raw, axis =0)) )
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_s_raw, axis =0)
     def fpi_r2_vanhove_s_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1, skip = 0):
         dist_col, vanhove_s = self.vanhove_s_AN_avg(interval_star, maxdist, accuracy, skip)
