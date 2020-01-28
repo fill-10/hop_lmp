@@ -22,8 +22,8 @@ if __name__ == '__main__':
     #print(d1.allframes[0].L_AN)
     print('last timestep read: ', d1.allframes[-1].time)
     
-    ##--- unwrap AN ---
-    d1.unwrapall_AN()  # no need to unwrap if read from fix file and uxyz not deleted
+    ##--- wrap AN ---
+    d1.wrapall_L()  #
 
     ##--- find fast AN ---
     fast_percentage = d1.find_AN_fast(16, 4.6, skip=1)  # interval_star= 16= 32000ps, r*=4.6A
