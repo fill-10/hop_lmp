@@ -391,7 +391,7 @@ class data(object):
         Nframe = len(self.allframes)
         pns_list = []
         for i in range(0, Nframe-interval_star, skip+1):
-            pns_single = self.allframes[i+interval_star].findstring(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, cutoff)
+            pns_single = self.allframes[i+interval_star].findstring(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, cutoff, maxlength)
             
             weighted_pns_single =  pns_single[0] * pns_single[1][:-1]   #weigthed histo
             #
