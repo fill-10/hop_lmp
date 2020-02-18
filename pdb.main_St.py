@@ -14,7 +14,7 @@ if __name__ == '__main__':
     d1.save_mem=1 # save atoms and ions
     ##--- read ht from file ---
     d1.L_all_ht = np.loadtxt('./ht1.dat', dtype=int)
-    d1.L_all_ht = np.append(d1.L_all_ht,  np.loadtxt('./ht4.dat', dtype=int)[1:], axis=0)
+    d1.L_all_ht = np.append(d1.L_all_ht,  np.loadtxt('./ht2.dat', dtype=int)[1:], axis=0)
     d1.L_all_ht = np.append(d1.L_all_ht,  np.loadtxt('./ht3.dat', dtype=int)[1:], axis=0)
     d1.L_all_ht = np.append(d1.L_all_ht,  np.loadtxt('./ht4.dat', dtype=int)[1:], axis=0)
     print(d1.L_all_ht.shape[0], ' * ', d1.L_all_ht.shape[1])
