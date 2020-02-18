@@ -443,6 +443,10 @@ class data(object):
         # Tested by 301 ht frames.
         # Old St : 879.7s
         # the new St below: 15.1s.
+        # Tested by 1001 ht frames.
+        # Old St: 33931 to 55700s including loading ht.
+        # New St: 261.8s including loading ht.
+        # More than 150x faster.
         time_column = []
         St_column = []
         for j in range(1, self.L_all_ht.shape[0]):
