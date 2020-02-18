@@ -438,7 +438,11 @@ class data(object):
             Ct_column.append( np.mean( Ct_raw)  )
         return time_column, Ct_column
     
-    def St(self, resol,  maxattemp = 500):
+    def St_old(self, resol,  maxattemp = 500): # deprecated
+        # This old St function is quite slow.
+        # Tested by 301 ht frames.
+        # Old St : 879.7s
+        # the new St below: 15.1s.
         time_column = []
         St_column = []
         for j in range(1, self.L_all_ht.shape[0]):
@@ -457,6 +461,45 @@ class data(object):
                 St_raw += [ np.sum(  np.all(self.L_all_ht[k-j:k+1,:] > 0 , axis = 0).astype(int) )/np.sum( self.L_all_ht[k-j,:] ) ]
             St_column.append( np.mean( St_raw)  )
         return time_column, St_column
+
+    def St(self, resol):
+        # find out the length of consecutive 1s in ht matrix:
+        L_htchange = np.vstack( (self.L_all_ht[0], \
+                                 self.L_all_ht[:-1] != self.L_all_ht[1:], \
+                                 np.ones(self.L_all_ht.shape[1]).astype(int) \
+                                ) \
+                              ).T
+        
+        # For each ion, 
+        # append the lengths of consecutive 1s to the list of total:
+        L_ht_last = []
+        for ht_single in L_htchange:
+            L_ht_last +=  list(np.diff( np.where(ht_single)[0] )[::2] )
+        #
+        # find the histogram of ht_last lengths
+        # Bins start from 1, which is t=0 actually.
+        hist_ht_last, hist_last_bins = np.histogram(np.array(L_ht_last), \
+                            bins = np.arange(1, self.L_all_ht.shape[0]+2) \
+                            )
+        #
+        # bin size is 1 longer than t.
+        # So sub by 1:
+        hist_last_bins = hist_last_bins[:-1] -1
+        
+        # Loop over time intervals to get St(t)
+        time_column = []
+        St_column = []
+        for j in range(1, self.L_all_ht.shape[0]):
+            time_column.append( j * resol)
+            #
+            ht_t0 = np.count_nonzero(self.L_all_ht[:-j])
+            #
+            # convert hist_ht_last to Ht:
+            Ht_t  = np.dot(hist_ht_last[j:], hist_last_bins[j:]-j+1)
+            St_column.append(Ht_t/ht_t0)
+
+        return time_column, St_column
+
 
     def bond_stat(self, sel1_kw, sel2_kw, bond_bins= np.arange(0, 5, 0.1), skip = 0):
         Nframe = len( self.allframes)
