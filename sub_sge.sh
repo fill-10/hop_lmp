@@ -17,7 +17,7 @@
 # or uncomment the following line by removing the initial ``###''
 #PBS -V 
 ### Set the job name
-#PBS -N vhs580
+#PBS -N Pf6C2_Stnew
 
 ### Run in the queue named "default"
 ### 'batch' is the only queue available on this qchem2 cluster, by default.
@@ -40,13 +40,13 @@
 ###
 ### You MUST specify some number of nodes or TORQUE will fail to load balance.
 ###
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=2
 
 ### Tell PBS how much memory you expect to use. Use units of 'b','kb', 'mb' or 'gb'
 ### #PBS -l mem=256m
 
 ### Tell PBS the anticipated run-time for your job, where walltime=HH:MM:SS
-#PBS -l walltime=12:00:00
+#PBS -l walltime=48:00:00
 
 ### Switch to the working directory; by default TORQUE launches processes
 ### from your home directory.
@@ -67,7 +67,17 @@ echo `cat $PBS_NODEFILE`
 ### /shared/openmpi/gcc/bin/mpirun -machinefile $PBS_NODEFILE -np $ncpus xhpl
 
 ### Or, just run your program
-python3 main_ions_from_pdb.py
+#python3 pdb.main_nongauss.py &
+#python3 pdb.main_ngpfine.py &
+#python3 pdb.main_vanhove_s.py &
+#python3 pdb.main_string.py &
+#python3 pdb.main_ht1.py &
+#python3 pdb.main_ht2.py &
+#python3 pdb.main_ht3.py &
+#python3 pdb.main_htlong.py &
+python3 pdb.main_St.py &
+#python3 pdb.main_Ct.py &
+#python3 pdb.main_Ctlong.py &
 wait 
 
 ### the wait command is a must. the shell needs to wait for all the backgrounded commands.
