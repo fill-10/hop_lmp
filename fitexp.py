@@ -31,7 +31,7 @@ try:
     df.columns = ['t', 'St']
     df=df.dropna()
     popt, pcov= curve_fit(func, df['t'], df['St'], [1,1e4,0.1])
-
+    perr = np.sqrt(np.diag(pcov))
     print('a0, a1, a2' , popt, '\n',pcov)
 
     # tau
