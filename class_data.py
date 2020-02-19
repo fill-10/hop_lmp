@@ -402,7 +402,7 @@ class data(object):
                 total_counted_ion = np.sum(weighted_pns_single) 
             if total_counted_ion>0: # to avoid 0 string when not include rattleing ions.
                 pns_list += [ weighted_pns_single/total_counted_ion]
-                print(pns_list)
+        print(pns_list)
         return np.mean(pns_list, axis=0), np.arange(1, maxlength+1)
 
     def ht_gen(self, r_cut, skip=0):
@@ -415,9 +415,16 @@ class data(object):
             L_all_ht += [ self.allframes[i].ht(r_cut) ]
         self.L_all_ht = np.array(L_all_ht) # save as a class attribute as np.array
 
-    def Ct(self, resol, maxattemp = 500):
-        # no check
-        # double loop average
+    def Ct_old(self, resol, maxattemp = 500): # deprecated
+        # this old func vs the new Ct below:
+        # 301 ht frames:
+        # old vs new: 29.3s vs 39.0s
+        # 1001 ht frames (no skip)
+        # old vs new: 477.8s vs 333.6s
+        # 3001 ht frames (no skip)
+        # old vs new: 4045s vs  2610s
+        # 4001 ht frames (no skip)
+        # old vs new: 12759s vs 4944s
         time_column = []
         Ct_column = []
         for j in range(1, self.L_all_ht.shape[0]): # loop over time intervals
@@ -433,11 +440,26 @@ class data(object):
                 loopstop = min( self.L_all_ht.shape[0], j + maxattemp )
             for k in range( j, loopstop, loopstep ):
             # loop over different start frames
-                Ct_raw += [ np.sum(  np.all(self.L_all_ht[[k-j,k],:] > 0 , axis = 0).astype(int) )/np.sum( self.L_all_ht[k-j,:] ) ]
+                Ct_raw += [ np.sum(  np.all(self.L_all_ht[[k-j,k],:] > 0 , axis = 0).astype(int) ) \
+                            /np.sum( self.L_all_ht[k-j,:] ) ]
 
             Ct_column.append( np.mean( Ct_raw)  )
         return time_column, Ct_column
     
+    def Ct(self, resol):
+        time_column = []
+        Ct_column = []
+        for j in range(1, self.L_all_ht.shape[0]): # loop over time intervals
+            time_column.append( j * resol )
+            ht_t0 = np.count_nonzero( self.L_all_ht[:-j] )
+            ht_t  = np.count_nonzero( np.logical_and ( \
+                                      self.L_all_ht[:-j] , \
+                                      self.L_all_ht[j:] ) \
+                                    )
+            #element wise and
+            Ct_column.append( ht_t / ht_t0 )
+        return time_column, Ct_column
+
     def St_old(self, resol,  maxattemp = 500): # deprecated
         # This old St function is quite slow.
         # Tested by 301 ht frames.
@@ -467,6 +489,8 @@ class data(object):
         return time_column, St_column
 
     def St(self, resol):
+        # I learned this function from stackoverflow. Question # 24342047
+        # 
         # find out the length of consecutive 1s in ht matrix:
         L_htchange = np.vstack( (self.L_all_ht[0], \
                                  self.L_all_ht[:-1] != self.L_all_ht[1:], \
