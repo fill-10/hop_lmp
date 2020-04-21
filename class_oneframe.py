@@ -229,8 +229,7 @@ class oneframe():
         return  VANHOVE_S( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
     
     def vanhove_d(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): #VH_d data piont
-        #return  VANHOVE_D( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
-        return  VANHOVE_D( L_mobile_ions['x'], L_mobile_ions['y'], L_mobile_ions['z'], ref['x'], ref['y'], ref['z'], maxdist, accuracy ) 
+        return  VANHOVE_D( L_mobile_ions['x'], L_mobile_ions['y'], L_mobile_ions['z'], ref['x'], ref['y'], ref['z'], [self.deltaX, self.deltaY, self.deltaZ] ,maxdist, accuracy ) 
     
     def findfast(self, L_mobile_ions, ref, r_star=6.0):
         L_mobile_ions['fast'] = 0

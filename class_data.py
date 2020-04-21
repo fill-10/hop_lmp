@@ -366,7 +366,7 @@ class data(object):
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_s_raw, axis =0)
     def fpi_r2_vanhove_s_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1, skip = 0):
         dist_col, vanhove_s = self.vanhove_s_AN_avg(interval_star, maxdist, accuracy, skip)
-        return dist_col, vanhove_s, vanhove_s*dist_col*dist_col*4*3.14159
+        return dist_col, vanhove_s, vanhove_s*dist_col*dist_col*4*3.14159 # vhs is normalized, 4pir2vhs is not
 
     ##--- averaged van hove distinct ---
     def vanhove_d_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
@@ -376,6 +376,15 @@ class data(object):
             vanhove_d_point = self.allframes[i+interval_star].vanhove_d(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
             vanhove_d_raw.append([vanhove_d_point[0]])
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_d_raw, axis =0)
+
+    def vanhove_d_AN_o_4pir2_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
+        dist_col, vanhove_d = self.vanhove_d_AN_avg(interval_star, maxdist, accuracy)
+        vhd_o_4pir2 = vanhove_d*10000/dist_col/dist_col/4/3.14159 # *10000 is tricky
+        # 10000 increases the values to avoid digit errors
+        # then normalized:
+        vhd_o_4pir2 = vhd_o_4pir2/np.sum(vhd_o_4pir2)/accuracy
+        return dist_col, vanhove_d, vhd_o_4pir2
+
 
     ##--- find fast ---
     def find_AN_fast(self, interval_star, rstar, skip=0):

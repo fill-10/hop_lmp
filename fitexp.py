@@ -9,7 +9,7 @@ def func(x, a0, a1, a2):
 
 # tau_c
 try:
-    df = pd.read_csv('../AmC2_Ct.dat', sep= ' ' ,escapechar='#')
+    df = pd.read_csv('../AmC2_Ctlong.dat', sep= ' ' ,escapechar='#')
     df.columns = ['t', 'Ct']
     df=df.dropna()
     popt, pcov= curve_fit(func, df['t'], df['Ct'], [1,1e4,0.1])
@@ -27,7 +27,7 @@ except:
 
 # tau_s
 try:
-    df = pd.read_csv('../AmC2_St.dat', sep= ' ' ,escapechar='#')
+    df = pd.read_csv('../AmC2_St_new.dat', sep= ' ' ,escapechar='#')
     df.columns = ['t', 'St']
     df=df.dropna()
     popt, pcov= curve_fit(func, df['t'], df['St'], [1,1e4,0.1])
