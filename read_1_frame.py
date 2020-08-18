@@ -65,12 +65,15 @@ def read_1_lmp(f, start=0, dim = 3):
         if readatom and atom_count >0:
             # convert data types
             for k in range(0, len(col_dict)):
-                if col_dict[k] in ['id', 'mol','type', 'ix', 'iy', 'iz']:
+                if col_dict[k] in ['id', 'mol', 'ix', 'iy', 'iz']:
                     cline[k] = int(cline[k])
                 elif col_dict[k] in ['q', 'x', 'y', 'z', 'ux', 'uy', 'uz']:
                     cline[k] = float(cline[k])
-                elif col_dict[k] == 'element':
-                    pass
+                elif col_dict[k] in ['element', 'type']:
+                    try:
+                        cline[k] = int(cline[k])
+                    except:
+                        pass
                 else:
                     cline[k] = float(cline[k])
             item_atoms += [cline]
