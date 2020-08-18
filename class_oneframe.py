@@ -231,6 +231,15 @@ class oneframe():
     def vanhove_d(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): #VH_d data piont
         return  VANHOVE_D( L_mobile_ions['x'], L_mobile_ions['y'], L_mobile_ions['z'], ref['x'], ref['y'], ref['z'], [self.deltaX, self.deltaY, self.deltaZ] ,maxdist, accuracy ) 
     
+    def fsqt(self, L_mobile_ions, ref, q):
+        distances = np.sqrt( \
+                    (  L_mobile_ions['ux']-ref['ux'])**2 \
+                 +  (  L_mobile_ions['uy']-ref['uy'])**2 \
+                 +  (  L_mobile_ions['uz']-ref['uz'])**2 \
+                           )
+        kr = distances*q
+        return np.mean(np.sin(kr)/kr)
+
     def findfast(self, L_mobile_ions, ref, r_star=6.0):
         L_mobile_ions['fast'] = 0
         r_star_squared = r_star*r_star

@@ -65,6 +65,7 @@ class data(object):
                 time, Natom, box, cols, atoms, pos = read_1_lmp(f)
                 onef = oneframe()
                 onef.load_snap(time, box, atoms, cols) 
+                #print(onef.time)
                 if self.CT_gen:
                     onef.L_CT = onef.ion_gen(*self.CT_gen)
                 if self.AN_gen:
@@ -74,6 +75,7 @@ class data(object):
                     onef.L_atom = []
                 if len(onef.L_AN) and len(onef.L_CT):
                     onef.L_CT['id'] +=  len(onef.L_AN)
+                #print('ion generated')
                 ##--- construct data structure.
                 self.allframes += [ onef ]
             except Exception as error:
@@ -382,7 +384,24 @@ class data(object):
         # then normalized:
         vhd_o_4pir2 = vhd_o_4pir2/np.sum(vhd_o_4pir2)/accuracy
         return dist_col, vanhove_d, vhd_o_4pir2
-
+    
+    def fsqt_AN_avg(self, q, resol, maxattemp=1000):
+        Nframe = len( self.allframes )
+        time_column = []
+        fsqt_column = []
+        for i in range(1, Nframe): # loop over time intervals
+            time_column.append( i*resol )
+            fsqt_point = [] 
+            #
+            for j in range(i, min(i+maxattemp, Nframe), 1):
+                fsqt_point.append(                   \
+                    self.allframes[j].fsqt(        \
+                        self.allframes[j].L_AN ,   \
+                        self.allframes[j-i].L_AN , \
+                        q                 )          \
+                                 )
+            fsqt_column.append( np.average(fsqt_point))
+        return time_column, fsqt_column
 
     ##--- find fast ---
     def find_AN_fast(self, interval_star, rstar, skip=0):
