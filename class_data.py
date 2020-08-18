@@ -65,7 +65,6 @@ class data(object):
                 time, Natom, box, cols, atoms, pos = read_1_lmp(f)
                 onef = oneframe()
                 onef.load_snap(time, box, atoms, cols) 
-                #print(onef.time)
                 if self.CT_gen:
                     onef.L_CT = onef.ion_gen(*self.CT_gen)
                 if self.AN_gen:
@@ -75,7 +74,6 @@ class data(object):
                     onef.L_atom = []
                 if len(onef.L_AN) and len(onef.L_CT):
                     onef.L_CT['id'] +=  len(onef.L_AN)
-                #print('ion generated')
                 ##--- construct data structure.
                 self.allframes += [ onef ]
             except Exception as error:
