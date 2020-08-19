@@ -14,7 +14,7 @@ if __name__ == '__main__':
     d1 = data()
     d1.save_mem=0
 
-    ##--- read in pdb traj output ---
+    ##--- read in lmp traj output ---
     #AN_gen_kw =  [ range(11,11+400), 1, 1, 1, [], 15, "sel[:]", 'type']
     #CT_gen_kw =  [ range(1,1+10), 2, 40, 1, [30,1171], 15, "sel[ ((sel.index%30<=9 ) & (sel.index%30>=5)) | ( (sel.index%30>=15 ) & (sel.index%30<=24)) ]", 'type'   ]
     d1.read_all_pdb(pdbfilename )#, AN_gen = AN_gen_kw, CT_gen =CT_gen_kw )
