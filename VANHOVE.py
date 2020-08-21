@@ -1,5 +1,4 @@
 import numpy as np
-from pbc_dist import pbc_dist
 def VANHOVE_S(ux, uy, uz, init_ux, init_uy, init_uz, maxdist =25.0, accuracy = 0.1):
     # input should be numpy.array or pandas.Series
     # N dim vector (N atoms)
