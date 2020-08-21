@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import pandas as pd
 from read_1_frame import *
-from read_1_fix import read_1_fix
 from COM import COM
 from NGP import NGP
 from MSD import MSD
