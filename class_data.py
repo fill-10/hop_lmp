@@ -281,18 +281,15 @@ class data(object):
         
         return norm_hist_ttl_atom, norm_hist_ttl_mol
 
-    def hoppingtype_AN(self, skip=0):
+    def hoppingtype_AN(self, t_star=1, skip=0):
         Nframe = len( self.allframes )
         counter = 0
         histosum = np.array([0,0,0,0])
         # loop over frames
-        for i in range(1+skip, Nframe):
-            # i from second to last
-            #
-            if i%(skip+1):
-                continue
-            # p from first to last but 1
-            p = i - skip -1
+        for i in range(t_star, Nframe, skip+1):
+            # i from tstar to last
+            # p from 0 to last - t_star
+            p = i - t_star
             histo_hop_type = self.allframes[i].hoppingtype_AN( self.allframes[p])
             histosum += histo_hop_type[0]
 
