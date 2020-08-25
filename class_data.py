@@ -281,21 +281,37 @@ class data(object):
         
         return norm_hist_ttl_atom, norm_hist_ttl_mol
 
-    def hoppingtype_AN(self, t_star=1, skip=0):
+    def hoppingtype_AN(self, dt=1, skip=0):
         Nframe = len( self.allframes )
         counter = 0
         histosum = np.array([0,0,0,0])
         # loop over frames
-        for i in range(t_star, Nframe, skip+1):
-            # i from tstar to last
-            # p from 0 to last - t_star
-            p = i - t_star
+        for i in range(dt, Nframe, skip+1):
+            # i from dt to last
+            # p from 0 to last - dt
+            # dt is the sampling time in number of frame unit.
+            # dt can be t_star for long time scale analysis.
+            p = i - dt
             histo_hop_type = self.allframes[i].hoppingtype_AN( self.allframes[p])
             histosum += histo_hop_type[0]
 
         norm_hist_hop_type = ( histosum/histosum.sum() , np.array([1,2,3,4,5]) )
         return norm_hist_hop_type
+    
+    def hopfast_AN(self, dt=1, skip=0):
+        Nframe = len( self.allframes )
+        counter = 0
+        histosum = np.array([0,0,0,0])
+        # loop over frames
+        for i in range(dt, Nframe, skip+1):
+            p = i - dt
+            histo_hop_type = self.allframes[i].hoppingtype_AN( self.allframes[p], 'fast')
+            histosum += histo_hop_type[0]
+
+        norm_hist_hop_type = ( histosum/histosum.sum() , np.array([1,2,3,4,5]) )
+        return norm_hist_hop_type
    
+  
     ##--- real time non gaussian (may have fluctuations) ---
     def nongauss_AN(self, skip=0):
         Nframe = len( self.allframes )
