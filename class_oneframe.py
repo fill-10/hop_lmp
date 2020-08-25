@@ -201,10 +201,14 @@ class oneframe():
             L_mo = L_mo.drop(['asso_atom', 'asso_mol'], axis = 1)
             L_im = L_im.drop(['if_asso'], axis = 1)
         return  N_asso_atom, N_asso_mol # return numbers   
-    def hoppingtype_AN(self, prev): #current and prev snap
+    def hoppingtype_AN(self, prev, selkey = ''): #current and prev snap
         asso_type = []
-        for ind, row in self.L_AN.iterrows():
-            #print(ind, row['atom'],type(row['asso_atom']))
+        try:
+            looptable = self.L_AN[ self.L_AN[selkey] > 0 ]
+        except:
+            looptable = self.L_AN
+
+        for ind, row in looptable.iterrows():
             if len(row['asso_atom']) == 0 or len(prev.L_AN.loc[ind,:]['asso_atom'] ) == 0:
                 asso_type += [3]
             elif np.array_equal(  row['asso_atom'] , prev.L_AN.loc[ind,:]['asso_atom']  ):
