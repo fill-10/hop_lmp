@@ -33,7 +33,15 @@ def VANHOVE_D(x, y, z, init_x, init_y, init_z, boxedges, maxdist =25.0, accuracy
     
     mybins = np.arange(0, maxdist, accuracy)
 
-    return np.histogram(distances, bins=mybins, density=True)[0]*accuracy, (mybins[:-1]+accuracy/2) 
+    return  np.histogram(distances, bins=mybins)[0], (mybins[:-1]+accuracy/2 )
+    # Returned hist is not normalized.
+    # Norm factor : 1/N(N-1) = # of sampling pairs in sys.
+    # (N-1) is in the i loop above: range(1-Natom)
+    # N is in the length of x, y and z: N ions.
+    # It is better to keep it as is then normalize it class_data.py after ensemble avg
+    # to avoid possible numerical problems.
+    # Old: return np.histogram(distances, bins=mybins, density=True)[0]*accuracy,\
+    # (mybins[:-1]+accuracy/2) 
 
 if __name__=='__main__':
     y = np.array([-1,-0.5,4])

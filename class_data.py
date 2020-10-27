@@ -382,20 +382,47 @@ class data(object):
         return dist_col, vanhove_s, vanhove_s*dist_col*dist_col*4*3.14159 # vhs is normalized, 4pir2vhs is not
 
     ##--- averaged van hove distinct ---
-    def vanhove_d_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
+    def vanhove_d_AN_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1, skip = 0):
         Nframe = len( self.allframes )
         vanhove_d_raw =[]
-        for i in range(0, Nframe - interval_star):
+        for i in range(0, Nframe - interval_star, skip+1):
+            # not normalized
             vanhove_d_point = self.allframes[i+interval_star].vanhove_d(self.allframes[i+interval_star].L_AN, self.allframes[i].L_AN, maxdist, accuracy)
             vanhove_d_raw.append([vanhove_d_point[0]])
         return np.arange(0, maxdist, accuracy)[:-1]+accuracy/2 , np.mean(vanhove_d_raw, axis =0)
 
-    def vanhove_d_AN_o_4pir2_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1):
-        dist_col, vanhove_d = self.vanhove_d_AN_avg(interval_star, maxdist, accuracy)
-        vhd_o_4pir2 = vanhove_d*10000/dist_col/dist_col/4/3.14159 # *10000 is tricky
-        # 10000 increases the values to avoid digit errors
-        # then normalized:
-        vhd_o_4pir2 = vhd_o_4pir2/np.sum(vhd_o_4pir2)/accuracy
+    def vanhove_d_AN_o_4pir2_avg(self,interval_star=100, maxdist=25.0, accuracy =0.1, skip = 0):
+        Nframe = len( self.allframes )
+        dist_col = np.arange(0, maxdist, accuracy)[:-1]+accuracy/2
+        vanhove_d_raw =[]
+        vhd_rho_raw =[]
+        # MD simulation: Number of ions is constant
+        Nanion = self.allframes[0].L_AN.shape[0]
+        for i in range(0, Nframe - interval_star, skip+1):
+            # not normalized
+            vanhove_d_point, dist_col_i =                   \
+            self.allframes[i+interval_star].vanhove_d(      \
+            self.allframes[i+interval_star].L_AN,           \
+            self.allframes[i].L_AN, maxdist, accuracy)
+            # norm by avg density: (Nanion/LxLyLz)
+            vanhove_d_raw.append(   vanhove_d_point )
+            vhd_rho_raw.append(     vanhove_d_point                 \
+            * self.allframes[i+interval_star].deltaX                \
+            * self.allframes[i+interval_star].deltaY                \
+            * self.allframes[i+interval_star].deltaZ                \
+            / self.allframes[i+interval_star].L_AN.shape[0]         \
+                               )
+        # Norm factor: sampled N anions, 
+        # and N-1 other anions to pair with (distinct).
+        # np.mean() ensemble average
+        vanhove_d = np.mean(vanhove_d_raw, axis = 0) / Nanion / (Nanion -1)
+        # np.mean() ensemble average
+        # Norm factor: sampled N anions.
+        # Density of the distinct (N-1) anions in shell of
+        # vhs_o_4pir2dr, dr=accuracy
+        vhd_o_4pir2 = np.mean(vhd_rho_raw, axis = 0)                \
+        / dist_col/dist_col/4/3.14159/accuracy                      \
+        / Nanion
         return dist_col, vanhove_d, vhd_o_4pir2
     
     def fsqt_AN_avg(self, q, resol, maxattemp=1000):
@@ -643,6 +670,43 @@ class data(object):
             else:
                 dihed_hist = c_hist
         return np.mean(dihed_hist, axis=0), dihed_bins[:-1] + binsize/2
+    def RCF( self, resol = 1 ): # 1st and 2nd rotational correlation funtions
+        Nvec =  self.allframes[0].L_AN.shape[0]
+        x1 = np.array([])
+        y1 = np.array([])
+        z1 = np.array([])
+        x2 = np.array([])
+        y2 = np.array([])
+        z2 = np.array([])
 
+        for frame in self.allframes:
+            x1 = np.hstack( (x1, frame.L_AN['ux']) )
+            y1 = np.hstack( (y1, frame.L_AN['uy']) )
+            z1 = np.hstack( (z1, frame.L_AN['uz']) )
+            x2 = np.hstack( (x2, frame.L_CT['ux']) )
+            y2 = np.hstack( (y2, frame.L_CT['uy']) )
+            z2 = np.hstack( (z2, frame.L_CT['uz']) )
+        #
+        vec_x = x2 - x1
+        vec_y = y2 - y1
+        vec_z = z2 - z1
+        del x1, x2, y1, y2, z1, z2
+        time_column = []
+        P1_column =  []
+        P2_column =  []
+        for i in range(1, len(self.allframes) ):
+            vec_x0 =  vec_x[: -Nvec*i]
+            vec_y0 =  vec_y[: -Nvec*i]
+            vec_z0 =  vec_z[: -Nvec*i]
+            vec_xt =  vec_x[Nvec*i : ]
+            vec_yt =  vec_y[Nvec*i : ]
+            vec_zt =  vec_z[Nvec*i : ]
+            cos_ti = (vec_x0 * vec_xt + vec_y0 * vec_yt + vec_z0 * vec_zt )\
+            / np.sqrt( (vec_x0 * vec_x0 + vec_y0 * vec_y0 + vec_z0 * vec_z0) \
+            *  (vec_xt * vec_xt + vec_yt * vec_yt + vec_zt * vec_zt) )
+            P1_column.append(  np.mean(cos_ti)  )
+            P2_column.append(  np.mean( 1.5 * cos_ti * cos_ti -0.5 )  )
+            time_column.append(  i*resol  )
+        return time_column, P1_column, P2_column
 
 
