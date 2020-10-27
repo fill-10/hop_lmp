@@ -8,12 +8,12 @@ def Gs_0(x, msd_t_star):
     return y
 
 # settings
-fn_prefix = '../AmC2_'
-msd_t_star = 14.52
+fn_prefix = '../Tf2C2_'
+msd_t_star = 16.014210
 rstep = 0.1
 
 # read
-df = pd.read_csv('../AmC2_4pi_r2_vanhove_s.dat', sep=' ', escapechar='#')
+df = pd.read_csv('../Tf2C2_4pi_r2_vanhove_s.dat', sep=' ', escapechar='#')
 df.columns = ['r', '4pir2vhs']
 
 #normalize

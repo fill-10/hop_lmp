@@ -4,7 +4,7 @@ if __name__ == '__main__':
     pdbfilename = '../nongauss_every100ps.pdb' # vanhove_s calculation
     ##--- output general settings ---=
     import numpy as np
-    fn_prefix = '../AmC2_'
+    fn_prefix = '../Tf2C2_'
     
     ##--- timer start ---
     start = timer.perf_counter()
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     d1.save_mem=1
 
     ##--- read in pdb traj output ---
-    AN_gen_kw =  [ range(11,11+400), 1, 1, 1, [], 15, "sel[:]", 'type']
+    AN_gen_kw =  [ range(1,1+400), 1, 1, 1, [], 15, "sel[:]", 'type']
     d1.read_all_pdb(pdbfilename, AN_gen = AN_gen_kw )
     #print(d1.allframes[0].L_AN)
     print('last timestep read: ', d1.allframes[-1].time)

@@ -64,5 +64,41 @@ try:
 except:
     pass
 
+# tau_r1
+try:
+    df = pd.read_csv('../Tf2C2_RCF_1.dat', sep= ' ' ,escapechar='#')
+    df.columns = ['t', 'RCF_1']
+    df=df.dropna()
+    popt, pcov= curve_fit(func, df['t'], df['RCF_1'], [1,1e4,0.1])
+    perr = np.sqrt(np.diag(pcov))
+    print('a0, a1, a2' , popt, '\n',pcov)
 
+    # tau
+    tau_C1 = popt[0]* popt[1] *gamma(1+1/popt[2])
+    tau_C1_low = (popt[0] - perr[0]) * (popt[1] - perr[1]) * gamma( 1 + 1/( popt[2] - perr[2]) )
+    tau_C1_high= (popt[0] + perr[0]) * (popt[1] + perr[1]) * gamma( 1 + 1/( popt[2] + perr[2]) )
+
+    print('tau_r1 = ', tau_C1)
+    print( 'tau_r1 low and high:', (tau_C1_low, tau_C1_high) )
+except:
+    pass
+
+# tau_r2
+try:
+    df = pd.read_csv('../Tf2C2_RCF_2.dat', sep= ' ' ,escapechar='#')
+    df.columns = ['t', 'RCF_2']
+    df=df.dropna()
+    popt, pcov= curve_fit(func, df['t'], df['RCF_2'], [1,1e4,0.1])
+    perr = np.sqrt(np.diag(pcov))
+    print('a0, a1, a2' , popt, '\n',pcov)
+
+    # tau
+    tau_C2 = popt[0]* popt[1] *gamma(1+1/popt[2])
+    tau_C2_low = (popt[0] - perr[0]) * (popt[1] - perr[1]) * gamma( 1 + 1/( popt[2] - perr[2]) )
+    tau_C2_high= (popt[0] + perr[0]) * (popt[1] + perr[1]) * gamma( 1 + 1/( popt[2] + perr[2]) )
+
+    print('tau_r2 = ', tau_C2)
+    print( 'tau_r2 low and high:', (tau_C2_low, tau_C2_high) )
+except:
+    pass
 
