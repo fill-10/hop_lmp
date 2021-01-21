@@ -16,3 +16,7 @@ Not complete yet but already useful.
 Howto:
 
 pdb.main_*.py is the 'template'.
+
+Please cite:
+
+Luo, X.; Liu, H.; Paddison, S.J.; Molecular Dynamics Simulations of Polymerized Ionic Liquids: Mechanism of Ion Transport with Different Anions, ACS Appl. Polym. Mater. 2021, 3, 1, 141–152
