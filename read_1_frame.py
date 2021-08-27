@@ -108,7 +108,15 @@ def read_1_pdb(f, start=0, dim=3):
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 def read_1_gro(f, start=0, dim=3):
-    pass
+    if start > 0:
+        f.seek(start)
+    Natom = 0
+    item_time = 0.0
+    item_atoms= []
+    item_box = []
+    # here only considers two typical options for pbc: nojump, whole
+    # treat these as unwrapped
+
 
 if __name__ == '__main__' :
     ##---test read lammpstrj
