@@ -82,6 +82,39 @@ class data(object):
                 print('reading finished.', 'error:', error)
                 break
 
+    def read_all_gro(self, filename, *args, **kwargs):
+        f = open(filename, 'r')
+        read_pos = 0
+        ##--- keywords interpretation ---
+        ##--- this is to save memory ---
+        if 'CT_gen' in kwargs and kwargs['CT_gen']:
+            self.CT_gen = kwargs['CT_gen']
+        else: self.CT_gen = 0
+        if 'AN_gen' in kwargs and kwargs['AN_gen']:
+            self.AN_gen = kwargs['AN_gen']
+        else: self.AN_gen = 0
+        ##--- loop! ---
+        while 1:
+            try:
+                ##--- read each time frame
+                time, Natom, box, cols, atoms, pos = read_1_gro(f)
+                onef = oneframe()
+                onef.load_snap(time, box, atoms, cols) 
+                if self.CT_gen:
+                    onef.L_CT = onef.ion_gen(*self.CT_gen)
+                if self.AN_gen:
+                    onef.L_AN = onef.ion_gen(*self.AN_gen)
+                if self.save_mem and (len(onef.L_CT) or len(onef.L_AN) ):
+                    del onef.L_atom
+                    onef.L_atom = []
+                if len(onef.L_AN) and len(onef.L_CT):
+                    onef.L_CT['id'] +=  len(onef.L_AN)
+                self.allframes += [ onef ]
+            except Exception as error:
+                print('reading finished.', 'error:', error)
+                break
+       f.close()
+
     def AN_CT_gen(self, L_anion_kw, L_cation_kw):
         self.CT_gen = L_cation_kw
         self.AN_gen = L_anion_kw
