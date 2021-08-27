@@ -113,7 +113,7 @@ class data(object):
             except Exception as error:
                 print('reading finished.', 'error:', error)
                 break
-       f.close()
+        f.close()
 
     def AN_CT_gen(self, L_anion_kw, L_cation_kw):
         self.CT_gen = L_cation_kw

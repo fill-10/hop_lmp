@@ -114,7 +114,7 @@ def read_1_gro(f, start=0, dim=3):
     item_time = 0.0
     item_atoms = []
     item_box   = []
-    col_dict = ['mol','res', 'type','type', 'ux', 'uy', 'uz']
+    col_dict = ['mol','res', 'type','id', 'ux', 'uy', 'uz']
     rawline = 'start'
     atom_sec = 0
     n = 1
