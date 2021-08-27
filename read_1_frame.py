@@ -112,35 +112,61 @@ def read_1_gro(f, start=0, dim=3):
         f.seek(start)
     Natom = 0
     item_time = 0.0
-    item_atoms= []
-    item_box = []
-    # here only considers two typical options for pbc: nojump, whole
-    # treat these as unwrapped
-
+    item_atoms = []
+    item_box   = []
+    col_dict = ['mol','res', 'type','type', 'ux', 'uy', 'uz']
+    rawline = 'start'
+    atom_sec = 0
+    n = 1
+    while n>0 and rawline !='': # EOF is ''
+        # if invalid .gro file, it will read to the EOF 
+        # but no data collected
+        rawline = f.readline()
+        if atom_sec:
+            item_atoms.append( \
+            [   int(rawline[0:5]), \
+                rawline[5:10].replace(' ',''), \
+                rawline[10:15].replace(' ',''), \
+                int(rawline[15:20]), \
+                float(rawline[21:28]) , \
+                float(rawline[28:36]) , \
+                float(rawline[36:44]) , \
+            ] )
+            n = n-1
+        else: # head
+            cline = rawline.split()
+            if 't=' in cline:
+                item_time = float( cline[cline.index('t=')+1] )
+                Natom = int( f.readline().split()[0] )
+                n = Natom
+                atom_sec = 1
+        # box size
+    try:
+        cline = f.readline().split()
+        item_box = [  \
+                    [ 0., float(cline[0]) ], \
+                    [ 0., float(cline[1]) ], \
+                    [ 0., float(cline[2]) ]  \
+               ]
+    except:
+        print('no box info')
+    # return
+    return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 if __name__ == '__main__' :
-    ##---test read lammpstrj
+    ##---test read
     """
-    filename = '../400K_corrected_lmp_B/VImC4_every100ps_0-50ns.lammpstrj'
+    filename = '../rest0/nvtequil_whole.gro'
     f = open(filename, 'r')
-    time, Natom, box, col, atoms, pos = read_1_lmp(f)
-    time, Natom, box, col, atoms, pos = read_1_lmp(f)
-    print(time)
-    print(box)
-    print(col)
-    print(atoms[1])
-    f.close()
-    """
-    ##--- test read pdb from gmx
-    """
-    pdbfilename = '../nvtprod_every1ns_00-50ns.pdb'
-    f = open(pdbfilename, 'r')
-    time, Natom, box, col, atoms, pos = read_1_pdb(f)
-    time, Natom, box, col, atoms, pos = read_1_pdb(f)
+    time, Natom, box, col, atoms, pos = read_1_gro(f)
     print(time)
     print(box)
     print(col)
     print(atoms[1])
     print(atoms[-1])
+    print(pos)
+    time, Natom, box, col, atoms, pos = read_1_gro(f)
+    print(pos)
     f.close()
     """
+    pass
