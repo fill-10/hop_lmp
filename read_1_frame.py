@@ -128,7 +128,7 @@ def read_1_gro(f, start=0, dim=3):
                 rawline[5:10].replace(' ',''), \
                 rawline[10:15].replace(' ',''), \
                 int(rawline[15:20]), \
-                float(rawline[21:28]) , \
+                float(rawline[20:28]) , \
                 float(rawline[28:36]) , \
                 float(rawline[36:44]) , \
             ] )
@@ -141,32 +141,29 @@ def read_1_gro(f, start=0, dim=3):
                 n = Natom
                 atom_sec = 1
         # box size
-    try:
-        cline = f.readline().split()
-        item_box = [  \
-                    [ 0., float(cline[0]) ], \
-                    [ 0., float(cline[1]) ], \
-                    [ 0., float(cline[2]) ]  \
-               ]
-    except:
-        print('no box info')
+    cline = f.readline().split()
+    item_box = [  \
+                [ 0., float(cline[0]) ], \
+                [ 0., float(cline[1]) ], \
+                [ 0., float(cline[2]) ]  \
+           ]
+    #print('no box info')
     # return
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 if __name__ == '__main__' :
     ##---test read
     """
-    filename = '../rest0/nvtequil_whole.gro'
+    filename = '../test3_rest2/rest0/rest0_protein.gro'
     f = open(filename, 'r')
-    time, Natom, box, col, atoms, pos = read_1_gro(f)
-    print(time)
-    print(box)
-    print(col)
-    print(atoms[1])
-    print(atoms[-1])
-    print(pos)
-    time, Natom, box, col, atoms, pos = read_1_gro(f)
-    print(pos)
+    while 1:
+        time, Natom, box, col, atoms, pos = read_1_gro(f)
+        print(time)
+        print(box)
+        print(col)
+        print(atoms[1])
+        print(atoms[-1])
+        print(pos)
     f.close()
     """
     pass
