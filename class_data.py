@@ -677,7 +677,7 @@ class data(object):
         return np.mean(angle_hist, axis=0), angle_bins[:-1] + binsize/2
 
     def dihed_stat( self, sel1_kw, sel2_kw, sel3_kw, sel4_kw, \
-                    dihed_bins=np.arange(0,180,1), skip=0):
+                    dihed_bins=np.arange(0,181,1), skip=0):
         Nframe = len( self.allframes)
         try:
             binsize = dihed_bins[1] - dihed_bins[0]
@@ -693,7 +693,18 @@ class data(object):
                    *sel3_kw )
             sel4 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
                    *sel4_kw )
-            L_dihed = np.arccos( self.allframes[i].dihed_uw(sel1, sel2, sel3, sel4) )
+            L_dihed = np.arccos( np.maximum( \
+                                   np.minimum(  \
+                                     self.allframes[i].dihed_uw(sel1, sel2, sel3, sel4), \
+                                     1       ), \
+                                   -1      )    \
+                               ) 
+            # ^
+            # |
+            # dihed_uw can return values slightly larger than 1 or smaller than -1,
+            # due to precision problem.
+            # so, use np.minimum and np.maximum to confine the dihed_uw in [-1,1].
+            # Or, arccos will return trivial nan.
             # type(L_dihed)  =  np.array( list  )
             L_dihed = L_dihed/np.pi*180
             c_hist, c_bins = np.histogram( L_dihed, bins=dihed_bins)

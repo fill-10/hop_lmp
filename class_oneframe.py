@@ -315,14 +315,17 @@ class oneframe():
 
     def selectatom(self, sourcelist, L_molid, ilocL_Ter, selrule):
         L_select = []
-        for i in L_molid:
-            sel = sourcelist[ sourcelist['mol'] == i ].reset_index( drop=True )
-            sel = sel.drop(ilocL_Ter).reset_index( drop = True )
-            sel1 = eval(selrule)
-            if len(L_select):
-                L_select = L_select.append(sel1, ignore_index=True)
-            else:
-                L_select = sel1
+        if len(L_molid):
+            for i in L_molid:
+                sel = sourcelist[ sourcelist['mol'] == i ].reset_index( drop=True )
+                sel = sel.drop(ilocL_Ter).reset_index( drop = True )
+                sel1 = eval(selrule)
+                if len(L_select):
+                    L_select = L_select.append(sel1, ignore_index=True)
+                else:
+                    L_select = sel1
+        else:
+            L_select = sourcelist[eval(selrule)]
         return L_select
 
     def bond_uw(self, sel1, sel2):
@@ -333,6 +336,11 @@ class oneframe():
             blength = np.linalg.norm(coor1-coor2)
             L_b_2.append(blength)
         return L_b_2
+    def sel(self, sourcelist, *args, **kwargs):
+        if 'molid' in kwargs:
+            pass
+        else:
+            pass
     
     def angle_uw(self, sel1, sel2, sel3):
         L_cos_a = []
@@ -344,7 +352,7 @@ class oneframe():
                       / np.linalg.norm(coor1-coor2) /  np.linalg.norm( coor3-coor2)
             L_cos_a.append(cos_angle)
         return L_cos_a
-    def dihed_uw(self, sel1, sel2, sel3, sel4):
+    def dihed_uw_old(self, sel1, sel2, sel3, sel4):
         L_cos_d = []
         for (idx1, row1) in sel1.iterrows():
             coor1 = row1[ ['ux', 'uy', 'uz'] ].values
@@ -373,7 +381,41 @@ class oneframe():
             L_cos_d.append( cos_dihedral)
             #
         return L_cos_d
+    def dihed_uw(self, sel1, sel2, sel3, sel4): # Vectorized
+        # convert to np.array:
+        coor1 = sel1[ ['ux', 'uy', 'uz'] ].values
+        coor2 = sel2[ ['ux', 'uy', 'uz'] ].values
+        coor3 = sel3[ ['ux', 'uy', 'uz'] ].values
+        coor4 = sel4[ ['ux', 'uy', 'uz'] ].values
+        # raw vector 1 and vector 2, axis
+        b0 = coor1 - coor2
+        baxis = coor3 -coor2
+        b1 = coor4 - coor3
+        # determine axis index: NO need to do, so commented out.
+        # if only 1 dim, it will be [[xx,yy,zz]],
+        # shape is (3,1)
+        ind_ax = 1
+        #if len(baxis.shape) == 1:
+        #    ind_ax = 0
+        #
+        # Axis as unit vector:
+        vaxis = (baxis.T /  np.linalg.norm( baxis, axis = ind_ax ) ).T
+        # component of b0 and b1 perpendicular to the axis
+        v0 = b0 - (vaxis.T * np.sum(b0 * vaxis, axis = ind_ax ) ).T
+        v1 = b1 - (vaxis.T * np.sum(b1 * vaxis, axis = ind_ax ) ).T
+        # dot product as in a row:
+        cos_dih = np.sum( v0 * v1 , axis = ind_ax )
+        # normalize:
+        # must divide the norms of v0 and v1, respectively.
+        # if v0 v1 are perpendicular, using norm of cos_dih will yield np.nan
+        # np.arccos cannot get PI/2 from np.nan
+        # cos_dih has n*1 dim:
+        cos_dih =  (  cos_dih.T / np.linalg.norm(v0, axis = ind_ax) \
+                    / np.linalg.norm(v1, axis = ind_ax) ).T
+        # return cos vector as np.array
+        return cos_dih
 
+        # Test of speed for angle calc:
         # Per my test, np.dot is 40 X faster than np.cross, 
         # and 6 X faster than np.linalg.norm
         # Faster function is always preferred.
@@ -381,3 +423,18 @@ class oneframe():
         # No problem with pi/2 or pi angles. 
         # This implementation uses cos.
         # No need to do cross product or arctan.
+
+if __name__ == '__main__':
+    m = oneframe()
+    a = pd.DataFrame([ [1,0,0], [2,0,0]   ], columns =['ux', 'uy', 'uz'])
+    b = pd.DataFrame([ [1,1,0], [0,-5.5,0]], columns =['ux', 'uy', 'uz'])
+    s1 = pd.DataFrame([[0,0,0],[0,0,0]    ], columns =['ux', 'uy', 'uz'])
+    s2 = pd.DataFrame([[0,0,2],[0,0,4.2]  ], columns =['ux', 'uy', 'uz'])
+    """
+    a = pd.DataFrame([ [1,0,0]  ], columns =['ux', 'uy', 'uz'])
+    b = pd.DataFrame([ [1,1,0]  ], columns =['ux', 'uy', 'uz'])
+    s1 = pd.DataFrame([[0,0,0]  ], columns =['ux', 'uy', 'uz'])
+    s2 = pd.DataFrame([[0,0,2]  ], columns =['ux', 'uy', 'uz'])
+    """
+
+    print(  m.dihed_uw(a,s1,s2, b) )
