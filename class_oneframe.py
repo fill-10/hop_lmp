@@ -90,12 +90,12 @@ class oneframe():
             del sel1
         
         ##--- convert the result into pandas dataframe
-        L_ion = pd.DataFrame(L_ion, columns = ['id', 'mol', 'type', 'ux', 'uy', 'uz'])
+        L_ion = pd.DataFrame(L_ion, columns = ['id', 'mol', 'type', 'xu', 'yu', 'zu'])
         return L_ion
     
     def read_ion(self, atoms, iontype, ionspermol=1):
         # read in lammps 'fix' file or any unwrapped COM data directly.
-        L_ion = pd.DataFrame(atoms, columns = ['id','ux','uy','uz']) 
+        L_ion = pd.DataFrame(atoms, columns = ['id','xu','yu','zu']) 
         L_ion['type'] = iontype
         # write mol id
         col_mol = []
@@ -126,7 +126,7 @@ class oneframe():
             f.write('ATOM  '+ '%5d' %row['id'] + ' ' \
                 + '%4s' %Tatom + ' ' + 'ION' + '  ' \
                 + '%4d' %row['mol']+ '    ' \
-                + '%8.3f' %row['ux']  + '%8.3f' %row['uy'] + '%8.3f' %row['uz'] \
+                + '%8.3f' %row['xu']  + '%8.3f' %row['yu'] + '%8.3f' %row['zu'] \
                 + ' '*24 +'\n')
                 # pdb records unwrapped data
         f.write('TER\n')
@@ -149,8 +149,8 @@ class oneframe():
         f.write('ITEM: ATOMS '+ ' '.join(col) +'\n'  )
         #f.write('ITEM: ATOMS '+ ' '.join(L_sel.columns.values.astype(str)) +'\n'  )
         # write atom body
-        L_sel.loc[:,col].to_csv(f, sep=' ', float_format='%.5f', header=False, index=False)
-
+        L_sel.loc[:,col].to_csv(f, sep=' ',  header=False, index=False)
+        #float_format='%.6f',
     def find_asso(self, L_im, L_mo, r_cut, clean = 0):
         # input must have wrapped data x y z
         # prepare two lists for the mobile ions: associate atoms and associated molecules.
@@ -223,22 +223,22 @@ class oneframe():
         return hist_hop_type # not normalized
     
     def msd(self, L_mobile_ions, ref):
-        return MSD(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
+        return MSD(L_mobile_ions['xu'], L_mobile_ions['yu'], L_mobile_ions['zu'], ref['xu'], ref['yu'], ref['zu'])
 
     def nongauss(self,L_mobile_ions,ref): # non gaussian parameter data point
-        return NGP(L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'])
+        return NGP(L_mobile_ions['xu'], L_mobile_ions['yu'], L_mobile_ions['zu'], ref['xu'], ref['yu'], ref['zu'])
     
     def vanhove_s(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): # VH_s data point
-        return  VANHOVE_S( L_mobile_ions['ux'], L_mobile_ions['uy'], L_mobile_ions['uz'], ref['ux'], ref['uy'], ref['uz'], maxdist, accuracy ) 
+        return  VANHOVE_S( L_mobile_ions['xu'], L_mobile_ions['yu'], L_mobile_ions['zu'], ref['xu'], ref['yu'], ref['zu'], maxdist, accuracy ) 
     
     def vanhove_d(self, L_mobile_ions, ref, maxdist = 25.0, accuracy = 0.1): #VH_d data piont
         return  VANHOVE_D( L_mobile_ions['x'], L_mobile_ions['y'], L_mobile_ions['z'], ref['x'], ref['y'], ref['z'], [self.deltaX, self.deltaY, self.deltaZ] ,maxdist, accuracy ) 
     
     def fsqt(self, L_mobile_ions, ref, q):
         distances = np.sqrt( \
-                    (  L_mobile_ions['ux']-ref['ux'])**2 \
-                 +  (  L_mobile_ions['uy']-ref['uy'])**2 \
-                 +  (  L_mobile_ions['uz']-ref['uz'])**2 \
+                    (  L_mobile_ions['xu']-ref['xu'])**2 \
+                 +  (  L_mobile_ions['yu']-ref['yu'])**2 \
+                 +  (  L_mobile_ions['zu']-ref['zu'])**2 \
                            )
         kr = distances*q
         return np.mean(np.sin(kr)/kr)
@@ -246,7 +246,7 @@ class oneframe():
     def findfast(self, L_mobile_ions, ref, r_star=6.0):
         L_mobile_ions['fast'] = 0
         r_star_squared = r_star*r_star
-        L_ds_squared = (L_mobile_ions['ux']-ref['ux'])**2 +(L_mobile_ions['uy']-ref['uy'])**2 + (L_mobile_ions['uz']-ref['uz'])**2
+        L_ds_squared = (L_mobile_ions['xu']-ref['xu'])**2 +(L_mobile_ions['yu']-ref['yu'])**2 + (L_mobile_ions['zu']-ref['zu'])**2
         for (idx, val) in L_ds_squared.iteritems():
             if val > r_star_squared:
                 L_mobile_ions.loc[idx, 'fast'] = 1
@@ -331,8 +331,8 @@ class oneframe():
     def bond_uw(self, sel1, sel2):
         L_b_2 = []
         for (idx1, row1) in sel1.iterrows():
-            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
-            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor1 = row1[ ['xu', 'yu', 'zu'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
             blength = np.linalg.norm(coor1-coor2)
             L_b_2.append(blength)
         return L_b_2
@@ -345,9 +345,9 @@ class oneframe():
     def angle_uw(self, sel1, sel2, sel3):
         L_cos_a = []
         for (idx1, row1) in sel1.iterrows():
-            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
-            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
-            coor3 = sel3.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor1 = row1[ ['xu', 'yu', 'zu'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
+            coor3 = sel3.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
             cos_angle = np.dot( (coor1-coor2 ), ( coor3-coor2 ) ) \
                       / np.linalg.norm(coor1-coor2) /  np.linalg.norm( coor3-coor2)
             L_cos_a.append(cos_angle)
@@ -355,10 +355,10 @@ class oneframe():
     def dihed_uw_old(self, sel1, sel2, sel3, sel4):
         L_cos_d = []
         for (idx1, row1) in sel1.iterrows():
-            coor1 = row1[ ['ux', 'uy', 'uz'] ].values
-            coor2 = sel2.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
-            coor3 = sel3.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
-            coor4 = sel4.iloc[idx1,:].loc[ ['ux', 'uy', 'uz'] ].values
+            coor1 = row1[ ['xu', 'yu', 'zu'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
+            coor3 = sel3.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
+            coor4 = sel4.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
             b0 = coor1 - coor2
             baxis = coor3 -coor2
             b1 = coor4 - coor3
@@ -383,10 +383,10 @@ class oneframe():
         return L_cos_d
     def dihed_uw(self, sel1, sel2, sel3, sel4): # Vectorized
         # convert to np.array:
-        coor1 = sel1[ ['ux', 'uy', 'uz'] ].values
-        coor2 = sel2[ ['ux', 'uy', 'uz'] ].values
-        coor3 = sel3[ ['ux', 'uy', 'uz'] ].values
-        coor4 = sel4[ ['ux', 'uy', 'uz'] ].values
+        coor1 = sel1[ ['xu', 'yu', 'zu'] ].values
+        coor2 = sel2[ ['xu', 'yu', 'zu'] ].values
+        coor3 = sel3[ ['xu', 'yu', 'zu'] ].values
+        coor4 = sel4[ ['xu', 'yu', 'zu'] ].values
         # raw vector 1 and vector 2, axis
         b0 = coor1 - coor2
         baxis = coor3 -coor2
@@ -426,15 +426,15 @@ class oneframe():
 
 if __name__ == '__main__':
     m = oneframe()
-    a = pd.DataFrame([ [1,0,0], [2,0,0]   ], columns =['ux', 'uy', 'uz'])
-    b = pd.DataFrame([ [1,1,0], [0,-5.5,0]], columns =['ux', 'uy', 'uz'])
-    s1 = pd.DataFrame([[0,0,0],[0,0,0]    ], columns =['ux', 'uy', 'uz'])
-    s2 = pd.DataFrame([[0,0,2],[0,0,4.2]  ], columns =['ux', 'uy', 'uz'])
+    a = pd.DataFrame([ [1,0,0], [2,0,0]   ], columns =['xu', 'yu', 'zu'])
+    b = pd.DataFrame([ [1,1,0], [0,-5.5,0]], columns =['xu', 'yu', 'zu'])
+    s1 = pd.DataFrame([[0,0,0],[0,0,0]    ], columns =['xu', 'yu', 'zu'])
+    s2 = pd.DataFrame([[0,0,2],[0,0,4.2]  ], columns =['xu', 'yu', 'zu'])
     """
-    a = pd.DataFrame([ [1,0,0]  ], columns =['ux', 'uy', 'uz'])
-    b = pd.DataFrame([ [1,1,0]  ], columns =['ux', 'uy', 'uz'])
-    s1 = pd.DataFrame([[0,0,0]  ], columns =['ux', 'uy', 'uz'])
-    s2 = pd.DataFrame([[0,0,2]  ], columns =['ux', 'uy', 'uz'])
+    a = pd.DataFrame([ [1,0,0]  ], columns =['xu', 'yu', 'zu'])
+    b = pd.DataFrame([ [1,1,0]  ], columns =['xu', 'yu', 'zu'])
+    s1 = pd.DataFrame([[0,0,0]  ], columns =['xu', 'yu', 'zu'])
+    s2 = pd.DataFrame([[0,0,2]  ], columns =['xu', 'yu', 'zu'])
     """
 
     print(  m.dihed_uw(a,s1,s2, b) )
