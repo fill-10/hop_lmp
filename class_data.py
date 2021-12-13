@@ -186,23 +186,31 @@ class data(object):
                 counter +=1
                 continue
             if len(frame.L_AN) and not len(frame.L_CT):
-                frame.export_lmptrj( f, \
-                    pd.concat( [frame.L_AN.loc[:, col], frame.L_atom.loc[:,col]], \
-                    ignore_index=True )    )
-            if not len(frame.L_AN) and len(frame.L_CT):
-                frame.export_lmptrj( f, \
-                    pd.concat( [frame.L_CT.loc[:, col], frame.L_atom.loc[:, col]], \
-                    ignore_index=True )    )
-            if len(frame.L_AN) and len(frame.L_CT):
-                frame.export_lmptrj( f, \
-                    pd.concat( [frame.L_AN.loc[:, col], frame.L_CT.loc[:, col], \
-                    frame.L_atom.loc[:, col]], ignore_index=True  )    )
+                df_sel = pd.concat( \
+                [ frame.L_AN.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True )
+            elif not len(frame.L_AN) and len(frame.L_CT):
+                df_sel = pd.concat( \
+                [ frame.L_CT.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True )
+            elif len(frame.L_AN) and len(frame.L_CT):
+                df_sel = pd.concat( \
+                [ frame.L_AN.loc[:, col], \
+                  frame.L_CT.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True  )
+            else:
+                df_sel = frame.L_atom.loc[:,col]
+            #
+            frame.export_lmptrj( f, df_sel, col )
             counter += 1
         f.close()
     
     def export_ions_pdb(self, fn, skip=0):
         # pdb records unwrapped data
-        col = ['id', 'mol', 'type', 'ux', 'uy', 'uz']
+        col = ['id', 'mol', 'type', 'xu', 'yu', 'zu']
         counter = 0
         f = open(fn, 'w')
         for frame in self.allframes:
@@ -221,7 +229,7 @@ class data(object):
     
     def export_all_pdb(self, fn, skip=0):
         # pdb records unwrapped data
-        col = ['id', 'mol', 'type', 'ux', 'uy', 'uz']
+        col = ['id', 'mol', 'type', 'xu', 'yu', 'zu']
         counter = 0
         f = open(fn, 'w')
         for frame in self.allframes:
@@ -724,12 +732,12 @@ class data(object):
         z2 = np.array([])
 
         for frame in self.allframes:
-            x1 = np.hstack( (x1, frame.L_AN['ux']) )
-            y1 = np.hstack( (y1, frame.L_AN['uy']) )
-            z1 = np.hstack( (z1, frame.L_AN['uz']) )
-            x2 = np.hstack( (x2, frame.L_CT['ux']) )
-            y2 = np.hstack( (y2, frame.L_CT['uy']) )
-            z2 = np.hstack( (z2, frame.L_CT['uz']) )
+            x1 = np.hstack( (x1, frame.L_AN['xu']) )
+            y1 = np.hstack( (y1, frame.L_AN['yu']) )
+            z1 = np.hstack( (z1, frame.L_AN['zu']) )
+            x2 = np.hstack( (x2, frame.L_CT['xu']) )
+            y2 = np.hstack( (y2, frame.L_CT['yu']) )
+            z2 = np.hstack( (z2, frame.L_CT['zu']) )
         #
         vec_x = x2 - x1
         vec_y = y2 - y1
