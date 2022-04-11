@@ -67,7 +67,7 @@ def read_1_lmp(f, start=0, dim = 3):
             for k in range(0, len(col_dict)):
                 if col_dict[k] in ['id', 'mol', 'ix', 'iy', 'iz']:
                     cline[k] = int(cline[k])
-                elif col_dict[k] in ['q', 'x', 'y', 'z', 'ux', 'uy', 'uz']:
+                elif col_dict[k] in ['q', 'x', 'y', 'z', 'xu', 'yu', 'zu']:
                     cline[k] = float(cline[k])
                 elif col_dict[k] in ['element', 'type']:
                     try:
@@ -90,7 +90,7 @@ def read_1_pdb(f, start=0, dim=3):
     item_atoms= []
     item_box = []
     # pdb only records 'unwrapped' data
-    col_dict = ['id','mol', 'type', 'ux', 'uy', 'uz']
+    col_dict = ['id','mol', 'type', 'xu', 'yu', 'zu']
     rawline = 'start'
     while rawline[0:6] != 'ENDMDL' and rawline !='': # EOF is ''
         rawline = f.readline()
@@ -114,7 +114,7 @@ def read_1_gro(f, start=0, dim=3):
     item_time = 0.0
     item_atoms = []
     item_box   = []
-    col_dict = ['mol','res', 'type','id', 'ux', 'uy', 'uz']
+    col_dict = ['mol','res', 'type','id', 'xu', 'yu', 'zu']
     rawline = 'start'
     atom_sec = 0
     n = 1
