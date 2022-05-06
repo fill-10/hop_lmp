@@ -15,22 +15,22 @@ def wrap(atom_group, box ):
     deltaY = abs(yhi -ylo)
     deltaZ = abs(zhi -zlo)
     for (idx, row) in atom_group.iterrows():
-        if row['ux'] > xhi:
-            atom_group.loc[idx, 'ix'] = int( (row['ux']-xlo) / deltaX)
-        if row['ux'] < xlo:
-            atom_group.loc[idx, 'ix'] = int( (row['ux']-xhi) / deltaX)
-        if row['uy'] > yhi:
-            atom_group.loc[idx, 'iy'] = int( (row['uy']-ylo) / deltaY)
-        if row['uy'] < ylo:
-            atom_group.loc[idx, 'iy'] = int( (row['uy']-yhi) / deltaY)
-        if row['uz'] > zhi:
-            atom_group.loc[idx, 'iz'] = int( (row['uz']-zlo) / deltaZ)
-        if row['uz'] < zlo:
-            atom_group.loc[idx, 'iz'] = int( (row['uz']-zhi) / deltaZ)
+        if row['xu'] > xhi:
+            atom_group.loc[idx, 'ix'] = int( (row['xu']-xlo) / deltaX)
+        if row['xu'] < xlo:
+            atom_group.loc[idx, 'ix'] = int( (row['xu']-xhi) / deltaX)
+        if row['yu'] > yhi:
+            atom_group.loc[idx, 'iy'] = int( (row['yu']-ylo) / deltaY)
+        if row['yu'] < ylo:
+            atom_group.loc[idx, 'iy'] = int( (row['yu']-yhi) / deltaY)
+        if row['zu'] > zhi:
+            atom_group.loc[idx, 'iz'] = int( (row['zu']-zlo) / deltaZ)
+        if row['zu'] < zlo:
+            atom_group.loc[idx, 'iz'] = int( (row['zu']-zhi) / deltaZ)
 
-    atom_group['x'] = atom_group['ux'] - atom_group['ix']*deltaX
-    atom_group['y'] = atom_group['uy'] - atom_group['iy']*deltaY
-    atom_group['z'] = atom_group['uz'] - atom_group['iz']*deltaZ
+    atom_group['x'] = atom_group['xu'] - atom_group['ix']*deltaX
+    atom_group['y'] = atom_group['yu'] - atom_group['iy']*deltaY
+    atom_group['z'] = atom_group['zu'] - atom_group['iz']*deltaZ
     # all the above are pointer operatoins.
     # no need to return any value, actually.
     return atom_group['x'].values, atom_group['y'].values, atom_group['z'].values

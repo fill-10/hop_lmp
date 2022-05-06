@@ -14,9 +14,9 @@ def COM(atom_group, mapping_col = 'type'):
     masses = atom_group[mapping_col].str.replace('\d+', '').map(mass_table)
     total_mass = masses.sum()
     # COM
-    we_ux = np.dot(atom_group['ux'] ,masses)/total_mass
-    we_uy = np.dot(atom_group['uy'] ,masses)/total_mass
-    we_uz = np.dot(atom_group['uz'] ,masses)/total_mass
+    we_ux = np.dot(atom_group['xu'] ,masses)/total_mass
+    we_uy = np.dot(atom_group['yu'] ,masses)/total_mass
+    we_uz = np.dot(atom_group['zu'] ,masses)/total_mass
     
     comux =  we_ux.sum()
     comuy =  we_uy.sum()
@@ -39,7 +39,11 @@ if __name__ == '__main__':
                             [414, 'H1', 1, 31.720,  38.160,   4.590] , \
                             [415, 'H2', 1, 32.470,  37.120,   8.660]   ],
                             index = [19,20,21,22,23,24,25,26], \
-                            columns = ['atom', 'type', 'mol', 'ux', 'uy','uz'] \
+                            columns = ['atom', 'type', 'mol', 'xu', 'yu','zu'] \
+                        )
+    atoms = pd.DataFrame([  [1, '1N2', 1, 4., 0., 0. ]   ], \
+                            index = [19], \
+                            columns = ['atom', 'type', 'mol', 'xu', 'yu','zu'] \
                         )
 
     com_ux, com_uy, com_uz= COM(atoms, 'type')

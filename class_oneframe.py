@@ -78,7 +78,7 @@ class oneframe():
             ##--- select each ion based on the input criterion(-ria)
             ##--- the eval() module runs the string and returns the results
             sel1 = eval(pick_cr_per_mon)
-            ##--- delete the verlet (temporary) atom dataframe
+            ##--- delete the verlet (temporary) atom DataFrame
             del sel
             ##--- now, only the atoms in ions are selected in sel1
             ##--- split them into independent ions
@@ -336,6 +336,15 @@ class oneframe():
             blength = np.linalg.norm(coor1-coor2)
             L_b_2.append(blength)
         return L_b_2
+    def bond_w(self, sel1, sel2):
+        L_b_2 = []
+        for (idx1, row1) in sel1.iterrows():
+            coor1 = row1[ ['x', 'y', 'z'] ].values
+            coor2 = sel2.iloc[idx1,:].loc[ ['x', 'y', 'z'] ].values
+            blength = pbc_dist(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ])
+            L_b_2.append(blength)
+        return L_b_2
+
     def sel(self, sourcelist, *args, **kwargs):
         if 'molid' in kwargs:
             pass

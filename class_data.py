@@ -649,7 +649,7 @@ class data(object):
                    *sel1_kw )
             sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
                    *sel2_kw )
-            L_b_2 = self.allframes[i].bond_uw(sel1, sel2)
+            L_b_2 = self.allframes[i].bond_w(sel1, sel2) # use bond_w for wrapped coordinates
             c_hist, c_bins = np.histogram(L_b_2, bins=bond_bins)
             c_hist = c_hist/np.sum(c_hist)
             if bond_hist.shape[0]:
