@@ -636,7 +636,7 @@ class data(object):
         return time_column, St_column
 
 
-    def bond_stat(self, sel1_kw, sel2_kw, bond_bins= np.arange(0, 5, 0.1), skip = 0):
+    def bond_stat(self, sel1_kw, sel2_kw, bond_bins= np.arange(0, 5, 0.1), skip = 0, use_wrapped = 1):
         Nframe = len( self.allframes)
         try:
             binsize = bond_bins[1] -bond_bins[0]
@@ -649,7 +649,12 @@ class data(object):
                    *sel1_kw )
             sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
                    *sel2_kw )
-            L_b_2 = self.allframes[i].bond_w(sel1, sel2) # use bond_w for wrapped coordinates
+            if use_wrapped :
+                # use bond_w for wrapped coordinates (default)
+                L_b_2 = self.allframes[i].bond_w(sel1, sel2)
+            else :
+                # use unwrapped xu yu zu
+                L_b_2 = self.allframes[i].bond_uw(sel1, sel2)
             c_hist, c_bins = np.histogram(L_b_2, bins=bond_bins)
             c_hist = c_hist/np.sum(c_hist)
             if bond_hist.shape[0]:
@@ -678,6 +683,43 @@ class data(object):
             L_angle = L_angle/np.pi*180
             c_hist, c_bins = np.histogram( L_angle, bins=angle_bins)
             c_hist = c_hist/np.sum(c_hist)
+            if angle_hist.shape[0]:
+                angle_hist = np.vstack( (angle_hist, c_hist ) )
+            else:
+                angle_hist = c_hist
+        return np.mean(angle_hist, axis=0), angle_bins[:-1] + binsize/2
+    
+    def vec_angle_stat( self, sel1_kw, sel2_kw, sel3_kw, sel4_kw, \
+                    angle_bins=np.arange(0,180,1), skip=0):
+        Nframe = len( self.allframes)
+        try:
+            binsize = angle_bins[1] - angle_bins[0]
+        except:
+            binsize = 1.0
+        angle_hist = np.array([])
+        # vector1: sel2-sel1
+        # vector2: sel4-sel3
+        for i in range(0, Nframe, skip+1):
+            sel1 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel1_kw )
+            sel2 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel2_kw )
+            sel3 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel3_kw )
+            sel4 = self.allframes[i].selectatom(self.allframes[i].L_atom,\
+                   *sel4_kw )
+            L_angle = np.arccos(   \
+                np.maximum( -1,    \
+                    np.minimum( 1, \
+                        self.allframes[i].vector_angle(sel1, sel2, sel3, sel4) \
+                    )    \
+                )        \
+            )
+            # type(L_angle)  =  np.array( list  )
+            L_angle = L_angle/np.pi*180
+            c_hist, c_bins = np.histogram( L_angle, \
+                bins=angle_bins, density = True ) # p(phi) density
+            #c_hist = c_hist/np.sum(c_hist)
             if angle_hist.shape[0]:
                 angle_hist = np.vstack( (angle_hist, c_hist ) )
             else:
