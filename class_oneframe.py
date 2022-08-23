@@ -361,6 +361,19 @@ class oneframe():
                       / np.linalg.norm(coor1-coor2) /  np.linalg.norm( coor3-coor2)
             L_cos_a.append(cos_angle)
         return L_cos_a
+
+    def vector_angle(self, sel1, sel2, sel3, sel4):
+        # vector1: sel2-sel1
+        # vector2: sel4-sel3
+        vec1_col =   sel2[['xu', 'yu', 'zu']] \
+                   - sel1[['xu', 'yu', 'zu']]
+        vec2_col =   sel4[['xu', 'yu', 'zu']] \
+                   - sel3[['xu', 'yu', 'zu']]
+        cos_col  =   np.sum( vec1_col * vec2_col, axis = 1 ) \
+                   / np.linalg.norm( vec1_col, axis = 1 )    \
+                   / np.linalg.norm( vec2_col, axis = 1 )
+        return cos_col
+
     def dihed_uw_old(self, sel1, sel2, sel3, sel4):
         L_cos_d = []
         for (idx1, row1) in sel1.iterrows():
