@@ -250,8 +250,41 @@ class data(object):
                     frame.L_CT.loc[:,col],\
                     frame.L_atom.loc[:,col] ],\
                     ignore_index=True  ) , counter+1 )
+            else: # no AN and no CT
+                 frame.export_pdb(  f, \
+                    frame.L_atom.loc[:,col], counter+1 )
             counter += 1
-
+    def export_all_gro(self, fn, skip=0 ):
+        col = [ 'mol', 'res', 'type', 'id','xu', 'yu', 'zu']
+        counter = 0
+        f = open(fn, 'w')
+        for frame in self.allframes:
+            if counter%(skip+1):
+                counter +=1
+                continue
+            if len(frame.L_AN) and not len(frame.L_CT):
+                df_sel = pd.concat( \
+                [ frame.L_AN.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True )
+            elif not len(frame.L_AN) and len(frame.L_CT):
+                df_sel = pd.concat( \
+                [ frame.L_CT.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True )
+            elif len(frame.L_AN) and len(frame.L_CT):
+                df_sel = pd.concat( \
+                [ frame.L_AN.loc[:, col], \
+                  frame.L_CT.loc[:, col], \
+                  frame.L_atom.loc[:, col] ], \
+                ignore_index=True  )
+            else:
+                df_sel = frame.L_atom.loc[:,col]
+            #
+            frame.export_gro( f, df_sel )
+            counter += 1
+        f.close()
+  
     def wrapall_L(self, skip=0 ):
         Nframe = len( self.allframes )
         for i in range(0, Nframe, skip+1):
