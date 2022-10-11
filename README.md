@@ -1,7 +1,7 @@
 # hop_lmp
 
 This package:
-1. reads in lammps trj and pdb (unwrapped pbc) into pandas dataframe and generate ions by centers of mass.
+1. reads in lammps trj, gro and pdb (unwrapped gro and pbc) into pandas dataframe and generate ions by centers of mass.
 2. calculates association of the counterions (AN) and categorizes hopping types of the counterions (AN).
 3. calcualtes non gaussian parameter and mean square displacement for AN. 
 4. calculates van hove function and distribution of string like motions for AN.
@@ -16,6 +16,7 @@ Not complete yet but already useful.
 Howto:
 
 pdb.main_*.py is the 'template'.
+gro.main_*.py is the 'template'.
 
 Please cite:
 
