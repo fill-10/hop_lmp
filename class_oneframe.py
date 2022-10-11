@@ -151,6 +151,24 @@ class oneframe():
         # write atom body
         L_sel.loc[:,col].to_csv(f, sep=' ',  header=False, index=False)
         #float_format='%.6f',
+    
+    def export_gro(self, f,  L_sel):
+        f.write(' t=' + str(self.time) +'\n' )
+        f.write( '%d' %self.Natom +'\n')
+        # write atom body
+        for (idx, row) in L_sel.iterrows():
+            f.write( '{:>5.5s}{:>5.5s}{:>5.5s}{:>5.5s}{:>8.3f}{:>8.3f}{:>8.3f}\n'.format(\
+                str(row['mol']), row['res'], row['type'], str(row['id']), \
+                row['xu'], row['yu'], row['zu'] )\
+            )
+            # use str() to convert the mol and id into str
+            # and truncate them if too long.
+            # lammps does not have a column-column trj.
+            # if load lammps trj and save into gromacs,
+            # it may destory the gro fromat if we have > 99999 atoms.
+        f.write('  {:>9.5f}  {:>9.5f}  {:>9.5f} \n'.format(
+            self.deltaX, self.deltaY, self.deltaZ      )  \
+        )
     def find_asso(self, L_im, L_mo, r_cut, clean = 0):
         # input must have wrapped data x y z
         # prepare two lists for the mobile ions: associate atoms and associated molecules.
