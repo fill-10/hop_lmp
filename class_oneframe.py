@@ -336,7 +336,9 @@ class oneframe():
         if len(L_molid):
             for i in L_molid:
                 sel = sourcelist[ sourcelist['mol'] == i ].reset_index( drop=True )
-                sel = sel.drop(ilocL_Ter).reset_index( drop = True )
+                sel = sel.drop(ilocL_Ter).reset_index( drop = True ) 
+                # Reset index in order to prepare for 
+                # the selection rule based on the index(ices).
                 sel1 = eval(selrule)
                 if len(L_select):
                     L_select = L_select.append(sel1, ignore_index=True)
@@ -344,7 +346,11 @@ class oneframe():
                     L_select = sel1
         else:
             L_select = sourcelist[eval(selrule)]
-        return L_select
+        return L_select.reset_index(drop=True)
+        # reset_index before return
+        # if not, there can be the bug, when:
+        # only one molid. L_select would have wrong index 
+        # orignially from sourcelist
 
     def bond_uw(self, sel1, sel2):
         L_b_2 = []
