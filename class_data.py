@@ -688,12 +688,14 @@ class data(object):
             else :
                 # use unwrapped xu yu zu
                 L_b_2 = self.allframes[i].bond_uw(sel1, sel2)
-            c_hist, c_bins = np.histogram(L_b_2, bins=bond_bins)
-            c_hist = c_hist/np.sum(c_hist)
+            c_hist, c_bins = np.histogram(L_b_2, bins=bond_bins, density=False)
+            c_hist = c_hist / np.sum(c_hist)
             if bond_hist.shape[0]:
                 bond_hist = np.vstack( (bond_hist, c_hist ) )
             else:
                 bond_hist = c_hist
+        if bond_hist.shape[0]: #only one time frame
+            return bond_hist, bond_bins[:-1] + binsize/2
         return np.mean(bond_hist, axis=0), bond_bins[:-1] + binsize/2
 
     def angle_stat( self, sel1_kw, sel2_kw, sel3_kw, \
