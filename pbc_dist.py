@@ -35,7 +35,7 @@ def ifconn(coor_1, coor_2, boxedges, r_cut, dimension=3):
 def pbc_vec(vec, deltaEdge):
     # vectorized 
     # vec = np.array([[x,y,z],[x,y,z],..])
-    # unwrapped x y z
+    # for wrapped x y z
     vec_copy = np.copy(vec)
     pos = vec_copy > 0
     neg = vec_copy < 0
