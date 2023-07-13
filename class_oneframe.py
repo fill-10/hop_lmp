@@ -153,7 +153,7 @@ class oneframe():
         #float_format='%.6f',
     
     def export_gro(self, f,  L_sel):
-        f.write(' t=' + str(self.time) +'\n' )
+        f.write(' t= ' + str(self.time) +'\n' )
         f.write( '%d' %self.Natom +'\n')
         # write atom body
         for (idx, row) in L_sel.iterrows():
