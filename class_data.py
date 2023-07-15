@@ -838,4 +838,10 @@ class data(object):
             time_column.append(  i*resol  )
         return time_column, P1_column, P2_column
 
+    def prep_sasa(self, kw_Prot, kw_Sol, Rcut ):
+        for frame in self.allframes:
+            status =  frame.prep_sasa(kw_Prot, kw_Sol, Rcut )
+            if  status :
+                print('Non-zero code for frame: ', frame.time )
+
 
