@@ -470,6 +470,87 @@ class oneframe():
         # This implementation uses cos.
         # No need to do cross product or arctan.
 
+    def pbcsolv(self, prot, sol, rcut, di, box_lo, box_hi, L_atom ):
+    # This function is to prepare the traj for sasa analysis
+    # vmd sasa does not count in pbc.
+    # Therefore, the traj must be modified that protein
+    # is fully surrounded by solvent molecules
+    # when the protein is across the pbc.
+    # This function is only for the solvent box of gmx trjconv -pbc whole,
+    # i.e., the solvent is mostly in the box
+    # prot: protein molecules, sol: solvent molecules, 
+    # rcut: cut off of the 'shield', di: 'xu'/'yu'/'zu', etc. 
+    # box_lo, box_hi: box boundary in 'di' direction,
+    # L_atom: whole atom list for modification. 
+    # Here must have L_atom, becasue a ref variable is needed so that
+    # the data can be directly modified to move the solvent molecules.
+    # This function returns the copied sol molecules, because 
+    # pandas.DataFrame.append cannot change the referred DataFrame L_atom.
+
+        # upper and lower bounds needed for solvation
+        bup = prot[di].max() + rcut
+        blo = prot[di].min() - rcut
+        # empty DataFrame for copy:
+        atom_copy = pd.DataFrame( columns=sol.columns )
+        # extend above upper bound:
+        if  bup > box_hi: # move or add sol mol to upper bound
+            sel_mol = sol.loc[  sol[ di ] <=  bup - box_hi + box_lo ,  :  ]
+            sel_molid = sel_mol['mol'].drop_duplicates( ).reset_index(drop=True)
+            sel_row = L_atom['mol'].isin( sel_molid ) # select from L_atom!
+            # copy or move:
+            if blo - box_lo > bup - box_hi : # True: move
+                L_atom.loc[ sel_row, di ] += box_hi - box_lo
+                pass
+            else : # False: copy
+                more_atom = sol.loc[ sel_row, : ].copy( deep = True )
+                more_atom.loc[:, di ]  +=  box_hi - box_lo
+                atom_copy = atom_copy.append( more_atom, ignore_index = True )
+        # extend below lower bound:
+        if blo < box_lo: #  to lower
+            sel_mol = sol.loc[  sol[ di ] >=  blo + box_hi - box_lo ,  :  ]
+            sel_molid = sel_mol['mol'].drop_duplicates( ).reset_index(drop=True)
+            sel_row = L_atom['mol'].isin( sel_molid ) # select from L_atom!
+
+            # copy or move:
+            if box_hi - bup > box_lo - blo  : # True: move
+                L_atom.loc[ sel_row, di ] -= box_hi - box_lo
+                pass
+            else : # False: copy
+                more_atom = sol.loc[ sel_row, : ].copy( deep = True )
+                more_atom.loc[:, di ]  -=  box_hi - box_lo
+                atom_copy = atom_copy.append( more_atom, ignore_index = True )
+        return  atom_copy
+    
+    def prep_sasa(self, kw_prot, kw_sol, rcut):
+        ## work on self.L_atom using self.pbcsolv().
+        dim = 0
+        rcut_shield = rcut
+        for direction in ['xu', 'yu', 'zu']:
+            if dim == 0:
+                box_Lo = self.xlo
+                box_Hi = self.xhi
+            elif dim == 1:
+                box_Lo = self.ylo
+                box_Hi = self.yhi
+            elif dim == 2:
+                box_Lo = self.zlo
+                box_Hi = self.zhi
+            # 
+            more_copy = self.pbcsolv(          \
+                self.L_atom.loc[ eval( kw_prot ), : ], \
+                self.L_atom.loc[ eval( kw_sol  ), : ], \
+                rcut_shield,  direction,       \
+                box_Lo, box_Hi, self.L_atom    )
+            self.L_atom = self.L_atom.append( more_copy, ignore_index = True )
+            # counter +1 
+            dim += 1
+        # update id and Natom
+        self.L_atom.reset_index( drop = True )
+        self.L_atom['id'] = self.L_atom.index + 1
+        self.Natom = self.L_atom.shape[0]
+        return 0
+
+
 if __name__ == '__main__':
     m = oneframe()
     a = pd.DataFrame([ [1,0,0], [2,0,0]   ], columns =['xu', 'yu', 'zu'])
