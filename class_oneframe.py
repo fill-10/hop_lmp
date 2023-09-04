@@ -361,6 +361,7 @@ class oneframe():
             L_b_2.append(blength)
         return L_b_2
     def bond_w(self, sel1, sel2):
+        """
         L_b_2 = []
         for (idx1, row1) in sel1.iterrows():
             coor1 = row1[ ['x', 'y', 'z'] ].values
@@ -368,6 +369,17 @@ class oneframe():
             blength = pbc_dist(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ])
             L_b_2.append(blength)
         return L_b_2
+        """
+        vec = sel1[ [ 'x', 'y', 'z' ] ].values \
+            - sel2[ [ 'x', 'y', 'z' ] ].values
+        # convert dtype from object to float.
+        # the orignal dataframe has the dtypes of object,
+        # because different data types in the columns.
+        # next step, object would not have sqrt attr. 
+        vec = vec.astype(np.float64)
+        pbc_vec( vec, [self.deltaX, self.deltaY, self.deltaZ] )
+        #return np.sqrt( np.sum( vec **2,  axis = 1 ).astype(np.float64) ) # ufunc, vec has been converted to float
+        return np.sqrt( np.sum( vec **2,  axis = 1 ) ) # ufunc
 
     def sel(self, sourcelist, *args, **kwargs):
         if 'molid' in kwargs:
