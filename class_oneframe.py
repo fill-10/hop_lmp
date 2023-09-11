@@ -123,8 +123,20 @@ class oneframe():
             elif len( Tatom ) == 3:
                 Tatom = Tatom +' '
 
+            Resname = str(row['res'])
+            if len( Resname ) == 1:
+                Resname = Resname + ' '*3
+            elif len( Resname ) == 2:
+                Resname = Resname + ' '*2
+            elif len( Resname ) == 3:
+                Resname = Resname + ' '*1
+            elif len( Resname ) == 4:
+                pass
+            else:
+                Resname = 'ION '
+
             f.write('ATOM  '+ '%5d' %row['id'] + ' ' \
-                + '%4s' %Tatom + ' ' + 'ION' + '  ' \
+                + '%4s' %Tatom + ' ' + Resname  + ' ' \
                 + '%4d' %row['mol']+ '    ' \
                 + '%8.3f' %row['xu']  + '%8.3f' %row['yu'] + '%8.3f' %row['zu'] \
                 + ' '*24 +'\n')
