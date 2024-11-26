@@ -365,23 +365,18 @@ class oneframe():
         # orignially from sourcelist
 
     def bond_uw(self, sel1, sel2):
-        L_b_2 = []
-        for (idx1, row1) in sel1.iterrows():
-            coor1 = row1[ ['xu', 'yu', 'zu'] ].values
-            coor2 = sel2.iloc[idx1,:].loc[ ['xu', 'yu', 'zu'] ].values
-            blength = np.linalg.norm(coor1-coor2)
-            L_b_2.append(blength)
-        return L_b_2
+        # vectorize
+        vec = sel1[ [ 'xu', 'yu', 'zu' ] ].values \
+            - sel2[ [ 'xu', 'yu', 'zu' ] ].values
+        # convert dtype from object to float.
+        # the orignal dataframe has the dtypes of object,
+        # because different data types in the columns.
+        # next step, object would not have sqrt attr. 
+        vec = vec.astype(np.float64)
+        return np.sqrt( np.sum( vec **2,  axis = 1 ) ) # ufunc
+
     def bond_w(self, sel1, sel2):
-        """
-        L_b_2 = []
-        for (idx1, row1) in sel1.iterrows():
-            coor1 = row1[ ['x', 'y', 'z'] ].values
-            coor2 = sel2.iloc[idx1,:].loc[ ['x', 'y', 'z'] ].values
-            blength = pbc_dist(coor1, coor2, [self.deltaX, self.deltaY, self.deltaZ])
-            L_b_2.append(blength)
-        return L_b_2
-        """
+        # vectorize
         vec = sel1[ [ 'x', 'y', 'z' ] ].values \
             - sel2[ [ 'x', 'y', 'z' ] ].values
         # convert dtype from object to float.
@@ -392,6 +387,37 @@ class oneframe():
         pbc_vec( vec, [self.deltaX, self.deltaY, self.deltaZ] )
         #return np.sqrt( np.sum( vec **2,  axis = 1 ).astype(np.float64) ) # ufunc, vec has been converted to float
         return np.sqrt( np.sum( vec **2,  axis = 1 ) ) # ufunc
+
+    def zmat(self, sel1, is_wrapped = False, is_sqrt = False): #Z-matrix gen
+        sel1 =sel1.reset_index(drop = True)
+        Nrow = sel1.shape[0]
+        if is_wrapped:
+            nm_col = ['x', 'y', 'z']
+        else:
+            nm_col = ['xu', 'yu', 'zu']
+        #empty res
+        res = np.array([])
+        for (idx, row) in sel1.iterrows():
+            if idx>0: # start from 2nd atom (row)
+                #tile ref
+                ref = np.tile(sel1.iloc[idx -1 ].loc[nm_col].values,  (Nrow-idx ,1 ) )
+                # other atoms
+                vec_rest = sel1.iloc[idx : ].loc[:, nm_col ].values
+                #print (  sel1.iloc[idx : ]  )
+                d_vec =  ref - vec_rest
+                # calc dist
+                if is_wrapped :
+                    pbc_vec( d_vec, [self.deltaX, self.deltaY, self.deltaZ] )
+                else:
+                    pass
+                dist_ref =  np.sum( d_vec **2,  axis = 1 ) 
+                res = np.concatenate( (res, dist_ref), axis = 0 ) 
+        if is_sqrt:
+            res = np.sqrt( res.astype(np.float32) ) #ufunc cannot loop  np.float64 (??)
+
+        self.L_zmat = res
+        # result: 0vs1~n, 1 vs 2~n, 2 vs 3~n ...
+        return res
 
     def sel(self, sourcelist, *args, **kwargs):
         if 'molid' in kwargs:
