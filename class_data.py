@@ -799,6 +799,14 @@ class data(object):
             else:
                 dihed_hist = c_hist
         return np.mean(dihed_hist, axis=0), dihed_bins[:-1] + binsize/2
+    def gen_zmat(self, kw_sel = None, is_wrapped = False , is_sqrt = False ):
+        for frame in self.allframes :
+            if kw_sel:
+                sel1 = frame.L_atom[kw_sel]
+            else :
+                sel1 = frame.L_atom
+            frame.zmat( sel1, is_wrapped, is_sqrt )
+        
     def RCF( self, resol = 1 ): # 1st and 2nd rotational correlation funtions
         Nvec =  self.allframes[0].L_AN.shape[0]
         x1 = np.array([])
