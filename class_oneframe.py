@@ -372,7 +372,7 @@ class oneframe():
         # the orignal dataframe has the dtypes of object,
         # because different data types in the columns.
         # next step, object would not have sqrt attr. 
-        vec = vec.astype(np.float64)
+        vec = vec.astype(np.float32)
         return np.sqrt( np.sum( vec **2,  axis = 1 ) ) # ufunc
 
     def bond_w(self, sel1, sel2):
