@@ -229,7 +229,7 @@ class data(object):
     
     def export_all_pdb(self, fn, skip=0):
         # pdb records unwrapped data
-        col = ['id', 'mol', 'type', 'xu', 'yu', 'zu']
+        col = ['id', 'mol', 'res', 'type', 'xu', 'yu', 'zu']
         counter = 0
         f = open(fn, 'w')
         for frame in self.allframes:
