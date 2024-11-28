@@ -1,13 +1,18 @@
 # hop_lmp
 
-This package:
-1. reads in lammps trj, gro and pdb (unwrapped gro and pbc) into pandas dataframe and generate ions by centers of mass.
-2. calculates association of the counterions (AN) and categorizes hopping types of the counterions (AN).
-3. calcualtes non gaussian parameter and mean square displacement for AN. 
-4. calculates van hove function and distribution of string like motions for AN.
-5. calculates continous time autocorrelation function, intermittent time autocorrelation function, tau_c and tau_s.
-6. Fs(q,t) and tau_q
-7. saves trj in lammps format
+This package is a little tool to handle gromacs/lammps/pdb trajectory files, with pandas and numpy. This allows: 
+1. Straight-forward and easy manimpulation of atoms, selecting by residue name, atom name, id, x, y, z, etc, within pandas data frame;
+2. Faster statistical calculations for thousands of frames by vectorization (numpy array calc);
+This package can be used to:
+1. reads and export lammps trj, gro and pdb (unwrapped gro and pbc) into/from pandas data frame.
+2. generates ions by centers of mass.
+3. calculates association of the counterions (AN) and categorizes hopping types of the counterions (AN).
+4. calcualtes non gaussian parameter and mean square displacement for AN. 
+5. calculates van hove function and distribution of string like motions for AN.
+6. calculates continous time autocorrelation function, intermittent time autocorrelation function, tau_c and tau_s.
+7. Fs(q,t) and tau_q
+8. saves trj in lammps format
+9. way more things to do!
 
 Tested on python 3.6.4, NumPy 1.14.2, SciPy 1.0.0, pandas 0.22.0 and matplotlib 2.0.2.
 
