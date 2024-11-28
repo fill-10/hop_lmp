@@ -2,7 +2,7 @@
 
 This package is a little tool to handle gromacs/lammps/pdb trajectory files, with pandas and numpy. This allows: 
 1. Straight-forward and easy manimpulation of atoms, selecting by residue name, atom name, id, x, y, z, etc, within pandas data frame;
-2. Faster statistical calculations for thousands of frames by vectorization (numpy array calc);
+2. Faster statistical calculations for thousands of frames by vectorization (numpy array calc).
 This package can be used to:
 1. reads and export lammps trj, gro and pdb (unwrapped gro and pbc) into/from pandas data frame.
 2. generates ions by centers of mass.
