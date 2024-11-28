@@ -400,11 +400,11 @@ class oneframe():
         for (idx, row) in sel1.iterrows():
             if idx>0: # start from 2nd atom (row)
                 #tile ref
-                ref = np.tile(sel1.iloc[idx -1 ].loc[nm_col].values,  (Nrow-idx ,1 ) )
+                ref = sel1.iloc[idx -1 ].loc[nm_col].values
                 # other atoms
                 vec_rest = sel1.iloc[idx : ].loc[:, nm_col ].values
                 #print (  sel1.iloc[idx : ]  )
-                d_vec =  ref - vec_rest
+                d_vec =   vec_rest - ref 
                 # calc dist
                 if is_wrapped :
                     pbc_vec( d_vec, [self.deltaX, self.deltaY, self.deltaZ] )
