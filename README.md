@@ -15,9 +15,7 @@ This package can be used to:
 8. saves trj in lammps format
 9. way more things to do!
 
-Tested on python 3.6.4, NumPy 1.14.2, SciPy 1.0.0, pandas 0.22.0 and matplotlib 2.0.2.
-
-Not complete yet but already useful.
+Not completed yet but already useful.
 
 Howto:
 
