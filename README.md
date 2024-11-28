@@ -5,7 +5,7 @@ This package is a little tool to handle gromacs/lammps/pdb trajectory files, wit
 2. Faster statistical calculations for thousands of frames by vectorization (numpy array calc).
 
 This package can be used to:
-1. reads and export lammps trj, gro and pdb (unwrapped gro and pbc) into/from pandas data frame.
+1. reads and export lammps trj, gro and pdb (unwrapped gro and pbc) into/from pandas data frame (only orthogonal box),
 2. generates ions by centers of mass.
 3. calculates association of the counterions (AN) and categorizes hopping types of the counterions (AN).
 4. calcualtes non gaussian parameter and mean square displacement for AN. 
