@@ -806,7 +806,11 @@ class data(object):
             else :
                 sel1 = frame.L_atom
             frame.zmat( sel1, is_wrapped, is_sqrt )
-        
+    def zmat2xyz(self, cols = ['xu','yu','zu'] ):
+        for frame in self.allframes :
+            xyz_reb = frame.zmat2xyz( frame.L_zmat )
+            frame.L_atom[cols] = np.round( xyz_reb, 3 ) # np.ndarray after round
+
     def RCF( self, resol = 1 ): # 1st and 2nd rotational correlation funtions
         Nvec =  self.allframes[0].L_AN.shape[0]
         x1 = np.array([])

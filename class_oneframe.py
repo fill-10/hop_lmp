@@ -343,12 +343,12 @@ class oneframe():
                 L_ht.append(  int(  ifconn(   [ anion['x'], anion['y'], anion['z'] ], [cation['x'], cation['y'], cation['z'] ], np.array([self.deltaX, self.deltaY,self.deltaZ]), r_cut ))   )
         return L_ht
 
-    def selectatom(self, sourcelist, L_molid, ilocL_Ter, selrule):
+    def selectatom(self, sourcelist, L_molid=[], ilocL_Ter=[], selrule=None):
         L_select = []
         if len(L_molid):
             for i in L_molid:
                 sel = sourcelist[ sourcelist['mol'] == i ].reset_index( drop=True )
-                sel = sel.drop(ilocL_Ter).reset_index( drop = True ) 
+                sel = sel.drop(ilocL_Ter).reset_index( drop = True )
                 # Reset index in order to prepare for 
                 # the selection rule based on the index(ices).
                 sel1 = eval(selrule)
@@ -388,7 +388,7 @@ class oneframe():
         #return np.sqrt( np.sum( vec **2,  axis = 1 ).astype(np.float64) ) # ufunc, vec has been converted to float
         return np.sqrt( np.sum( vec **2,  axis = 1 ) ) # ufunc
 
-    def zmat(self, sel1, is_wrapped = False, is_sqrt = False): #Z-matrix gen
+    def zmat(self, sel1, is_wrapped = False, is_sqrt = True ): #Z-matrix gen
         sel1 =sel1.reset_index(drop = True)
         Nrow = sel1.shape[0]
         if is_wrapped:
@@ -398,11 +398,11 @@ class oneframe():
         #empty res
         res = np.array([])
         for (idx, row) in sel1.iterrows():
-            if idx>0: # start from 2nd atom (row)
+            if idx < min(3, Nrow - 1):
                 #tile ref
-                ref = sel1.iloc[idx -1 ].loc[nm_col].values
+                ref = sel1.iloc[ idx ].loc[nm_col].values
                 # other atoms
-                vec_rest = sel1.iloc[idx : ].loc[:, nm_col ].values
+                vec_rest = sel1.iloc[idx +1 : ].loc[:, nm_col ].values
                 #print (  sel1.iloc[idx : ]  )
                 d_vec =   vec_rest - ref 
                 # calc dist
@@ -418,6 +418,49 @@ class oneframe():
         self.L_zmat = res
         # result: 0vs1~n, 1 vs 2~n, 2 vs 3~n ...
         return res
+    def zmat2xyz(self, zmat_in): # rev zmat to xyz
+        # [0, N-1): dist to at0
+        # [N-1, N-1+N-2): dist to at1
+        # [2N-3, 3N-6): dist to at2
+        Nat = int ( len(zmat_in)/3 +2 )
+        def build_basis3( zmat ): # 1st 3 atoms by default
+            at0 = [ 0. , 0. , 0. ]
+            if len (zmat) < 2 :
+                return at0
+            at1 = [ zmat[ 0 ] , 0. , 0. ]
+            if len (zmat) < 3 :
+                return [ at0, at1 ]
+            # (x) **2         + y **2  = zmat[1] **2
+            # (x-zmat[0]) **2 + y **2  = zmat[Nat - 1] **2
+            x_at2 = 0.5 * ( ( zmat[1]**2 - zmat[Nat-1]**2 ) / zmat[0] + zmat[0] )
+            y_at2 = np.sqrt( zmat[1]**2 - x_at2**2)
+            at2 = [ x_at2, y_at2, 0. ]
+            return [ at0, at1, at2 ] # list
+        
+        basis = build_basis3( zmat_in )
+        res = basis
+        if Nat < 4:
+            return res
+        #else
+        for  i in range ( 3 , Nat):
+            d0 = zmat_in[i-1]
+            d1 = zmat_in[ Nat-1 + i-2]
+            d2 = zmat_in[ 2*Nat-3 + i-3 ]
+            # ( x     )**2 + (y     )**2 + z**2 = d0 **2
+            # ( x - x1)**2 + (y     )**2 + z**2 = d1 **2
+            # ( x - x2)**2 + (y - y2)**2 + z**2 = d2 **2
+            #
+            #  x1*(2x-x1) = d0**2 - d1**2 
+            #  where x1 = basis[1][0]
+            x_i = 0.5 * ( (d0**2-d1**2) / basis[1][0] + basis[1][0] )
+            # ( x2-x1)*(2*x_i -x1-x2) + y2 *(2*y-y2)  = d1**2 -d2**2
+            # where x2 = basis[2][0], x1=basis[1][0], y2=basis[2][1]
+            y_i = 0.5 * ( (d1**2-d2**2 -  (basis[2][0] - basis[1][0]) * (2*x_i - basis[2][0] - basis[1][0] ) ) \
+                        / basis[2][1] + basis[2][1]  )
+            z_i = np.sqrt( max (0, d0 **2 - x_i**2 - y_i **2 ) )
+            # avoid truncation error when z_i ~= 0 that z_i<0
+            res.append( [ x_i, y_i, z_i ] )
+        return res  # list(float) in (Natom, 3)
 
     def sel(self, sourcelist, *args, **kwargs):
         if 'molid' in kwargs:
