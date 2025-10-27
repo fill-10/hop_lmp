@@ -111,7 +111,7 @@ class oneframe():
         del self.L_atom
 
     def export_pdb(self, f, L_sel, Nth_frame):
-        f.write('REMARK\n'*3)
+        f.write('REMARK\n')
         f.write('CRYST1'+ '%9.3f'%self.deltaX +'%9.3f'%self.deltaY +'%9.3f'%self.deltaZ + '%7.2f'%self.alpha +'%7.2f'%self.beta+'%7.2f'%self.gama+' P 1           1\n')
         f.write('MODEL ' + ' '*4 + '%4d' %Nth_frame +'\n')
         for (idx, row) in L_sel.iterrows():
