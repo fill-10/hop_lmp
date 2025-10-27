@@ -90,9 +90,9 @@ def read_1_pdb(f, start=0, dim=3):
     item_atoms= []
     item_box = []
     # pdb only records 'unwrapped' data
-    col_dict = ['id','mol', 'type', 'xu', 'yu', 'zu']
+    col_dict = ['id','mol', 'type', 'res', 'xu', 'yu', 'zu']
     rawline = 'start'
-    while rawline[0:6] != 'ENDMDL' and rawline !='': # EOF is ''
+    while rawline[0:6] != 'ENDMDL' and rawline[ 0 : 3 ] != 'END' and rawline !='': # EOF is ''
         rawline = f.readline()
         if rawline[0:6] == 'TITLE ':
             cline = rawline.split()
@@ -103,8 +103,14 @@ def read_1_pdb(f, start=0, dim=3):
             item_box = [ [0., float(cline[1])], [0., float(cline[2])], [0, float(cline[3]) ] ]
         elif rawline[0:6] == 'ATOM  ' or rawline[0:6]=='HETATM':
             Natom += 1
-            item_atoms.append(  [  int(rawline[6:11]), int(rawline[22:26]), rawline[12:16].replace(' ',''), float(rawline[30:38]), float(rawline[38:46]), float(rawline[46:54]) ] )
-    
+            item_atoms.append(  \
+            [   int (rawline[6:11]), \
+                int (rawline[22:26]), \
+                rawline[12:16].replace(' ',''), \
+                rawline[17:20].replace(' ',''), \
+                float (rawline[30:38]), \
+                float (rawline[38:46]), \
+                float (rawline[46:54]) ]                 )
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 def read_1_gro(f, start=0, dim=3):
