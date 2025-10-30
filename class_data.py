@@ -114,6 +114,33 @@ class data(object):
                 print('reading finished.', 'error:', error)
                 break
         f.close()
+    
+    def read_all_gsd(self, filename, *args, **kwargs):
+        import gsd.hoomd
+        traj = gsd.hoomd.open(filename, 'r')
+        for frame in traj:
+            timestep, Natom, box, col, atomtype, q, xyz, ixyz = read_1_gsd(frame)
+            onef = oneframe()
+            onef.time = timestep
+            onef.Natom = Natom
+            #
+            onef.xlo = 0.
+            onef.ylo = 0.
+            onef.zlo = 0.
+            onef.xhi = box[0]
+            onef.yhi = box[1]
+            onef.zhi = box[2]
+            onef.deltaX = abs(onef.xhi-onef.xlo)
+            onef.deltaY = abs(onef.yhi-onef.ylo)
+            onef.deltaZ = abs(onef.zhi-onef.zlo)
+
+            onef.L_atom = pd.DataFrame( xyz, columns = [ 'x', 'y', 'z'] )
+            onef.L_atom['ix'] = ixyz[:, 0]
+            onef.L_atom['iy'] = ixyz[:, 1]
+            onef.L_atom['iz'] = ixyz[:, 2]
+            onef.L_atom['q'] = q
+            onef.L_atom['type'] = atomtype
+            self.allframes += [ onef ]
 
     def AN_CT_gen(self, L_anion_kw, L_cation_kw):
         self.CT_gen = L_cation_kw

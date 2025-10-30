@@ -156,20 +156,21 @@ def read_1_gro(f, start=0, dim=3):
     #print('no box info')
     # return
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
+def read_1_gsd(frame):
+    import gsd.hoomd
+    xyz = frame.particles.position
+    ixyz = frame.particles.image
+    box = frame.configuration.box
+    item_box = box[: 3 ] # only dx dy dz
+    item_time = frame.configuration.step
+    atomtype = [ frame.particles.types[i] \
+          for i in frame.particles.typeid ] 
+    Natom = frame.particles.N
+    q = frame.particles.charge
+    col_dict = ['type', 'q', 'x', 'y', 'z','ix', 'iy', 'iz']
+    return item_time, Natom, item_box, col_dict, atomtype, q, xyz, ixyz # do not mess up data type
+
 
 if __name__ == '__main__' :
     ##---test read
-    """
-    filename = '../test3_rest2/rest0/rest0_protein.gro'
-    f = open(filename, 'r')
-    while 1:
-        time, Natom, box, col, atoms, pos = read_1_gro(f)
-        print(time)
-        print(box)
-        print(col)
-        print(atoms[1])
-        print(atoms[-1])
-        print(pos)
-    f.close()
-    """
     pass
