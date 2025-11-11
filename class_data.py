@@ -124,15 +124,15 @@ class data(object):
             onef.time = timestep
             onef.Natom = Natom
             #
-            onef.xlo = 0.
-            onef.ylo = 0.
-            onef.zlo = 0.
-            onef.xhi = box[0]
-            onef.yhi = box[1]
-            onef.zhi = box[2]
-            onef.deltaX = abs(onef.xhi-onef.xlo)
-            onef.deltaY = abs(onef.yhi-onef.ylo)
-            onef.deltaZ = abs(onef.zhi-onef.zlo)
+            onef.deltaX= box[0]
+            onef.deltaY= box[1]
+            onef.deltaZ= box[2]
+            onef.xlo = -onef.deltaX / 2
+            onef.ylo = -onef.deltaY / 2
+            onef.zlo = -onef.deltaZ / 2
+            onef.xhi =  onef.deltaX / 2
+            onef.yhi =  onef.deltaY / 2
+            onef.zhi =  onef.deltaZ / 2
 
             onef.L_atom = pd.DataFrame( xyz, columns = [ 'x', 'y', 'z'] )
             onef.L_atom['ix'] = ixyz[:, 0]
