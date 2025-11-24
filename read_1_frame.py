@@ -88,7 +88,7 @@ def read_1_pdb(f, start=0, dim=3):
     Natom = 0
     item_time = 0.0
     item_atoms= []
-    item_box = []
+    item_box = [[0., 1.0], [0., 1.0], [0., 1.0]]
     # pdb only records 'unwrapped' data
     col_dict = ['id','mol', 'type', 'res', 'xu', 'yu', 'zu']
     rawline = 'start'
@@ -97,7 +97,10 @@ def read_1_pdb(f, start=0, dim=3):
         if rawline[0:6] == 'TITLE ':
             cline = rawline.split()
             # gromacs: time is recorded after 't='
-            item_time = float( cline[cline.index('t=')+1] )
+            try:
+                item_time = float( cline[cline.index('t=')+1] )
+            except:
+                pass
         elif rawline[0:6] == 'CRYST1':
             cline = rawline.split()
             item_box = [ [0., float(cline[1])], [0., float(cline[2])], [0, float(cline[3]) ] ]
@@ -111,6 +114,8 @@ def read_1_pdb(f, start=0, dim=3):
                 float (rawline[30:38]), \
                 float (rawline[38:46]), \
                 float (rawline[46:54]) ]                 )
+    if len(item_atoms) == 0 : #good for np array and pd df as well
+        return -1 # if no atom, return -1 to break the loop over frames
     return item_time, Natom, item_box, col_dict, item_atoms, f.tell()
 
 def read_1_gro(f, start=0, dim=3):
