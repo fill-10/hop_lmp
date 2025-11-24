@@ -44,7 +44,6 @@ class data(object):
             except Exception as error:
                 print('reading finished.', 'error:', error)
                 break
-        
         return 0
 
     def read_all_lmp(self, filename, *args, **kwargs):
