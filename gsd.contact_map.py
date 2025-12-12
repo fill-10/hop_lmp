@@ -40,7 +40,7 @@ for frame in d1.allframes:
     frame.L_atom = frame.L_atom.reset_index( drop= True )
     frame.L_atom['id'] = frame.L_atom.index + 1
 
-#d1.allframes = d1.allframes[: : 100 ]
+d1.allframes = d1.allframes[:: 100 ]
 print("number of frames: ", len ( d1.allframes ) )
 
 d1.gen_dcut( hps = '../stats_module.dat' )
@@ -51,10 +51,10 @@ mesh = ax.pcolormesh( x, y, H )
 cbar = fig.colorbar(mesh, ax=ax)
 cbar.set_label("Counts")
 ax.set_xlabel("Res 1")
-ax.set_xlabel("Res 2")
+ax.set_ylabel("Res 2")
 plt.savefig('inter_contact_map.png', transparent=True, dpi=300)
-print(H, x, y)
-print(H.shape, x.shape, y.shape)
+#print(H, x, y)
+#print(H.shape, x.shape, y.shape)
 #print( d1.allframes[-1].L_atom )
 
 """
