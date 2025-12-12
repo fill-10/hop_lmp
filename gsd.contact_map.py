@@ -1,8 +1,8 @@
 import numpy as np
 import sys
 import os
-parentdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' ) )
-sys.path.append(parentdir)
+#parentdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' ) )
+#sys.path.append(parentdir)
 from class_data import *
 from class_oneframe import *
 from util_ff import *
