@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 import copy
+from util_ff import *
 from class_oneframe import *
 
 class data(object):
@@ -881,5 +882,35 @@ class data(object):
             status =  frame.prep_sasa(kw_Prot, kw_Sol, Rcut )
             if  status :
                 print('Non-zero code for frame: ', frame.time )
-
-
+    def gen_dcut(self, sel = None  , *args, **kwargs):
+        if 'hps' in kwargs:
+            ff_file = kwargs['hps' ] 
+            ff_atomwise = read_ff_file( ff_file )
+            type_to_sig = ff_atomwise.copy()
+            for key in type_to_sig:
+                type_to_sig[key] =  type_to_sig[key][2]
+        for frame in self.allframes:
+            #CL_atom = eval( 'frame.'+ sel )
+            frame.L_atom['dcut'] =  frame.L_atom['type'].map(type_to_sig)
+        
+    def contact_map(self, sel= None ):
+        L_cont_pair_x = [] 
+        L_cont_pair_y = []
+        for frame in self.allframes:
+            #CL_atom = eval( 'frame.'+ sel )
+            Lidx1, Lidx2, d_2, d_cut_2 = frame.inter_cont_list()
+            L_cont_pair_x.append( Lidx1 ) # dtype: int
+            L_cont_pair_y.append( Lidx2 ) # dtype: int
+        L_pair_x = np.hstack( L_cont_pair_x)
+        L_pair_y = np.hstack( L_cont_pair_y)
+        # symmetry
+        L_symm_pair_x = np.hstack( [L_pair_x, L_pair_y ] )
+        L_symm_pair_y = np.hstack( [L_pair_y, L_pair_x ] )
+        # hist
+        upper_x = np.max( L_symm_pair_x ) # hist upper bound
+        upper_y = upper_x 
+        bins_x = range( 0 , upper_x + 2 )
+        bins_y = range( 0 , upper_y + 2 )
+        H, xedges, yedges = np.histogram2d( L_symm_pair_x, L_symm_pair_y, bins = [  bins_x, bins_y ] )
+        ### H = H / 2 # no need ot div by 2 for the #symmmetry hstack
+        return H, xedges, yedges

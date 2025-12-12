@@ -642,7 +642,128 @@ class oneframe():
         self.L_atom['id'] = self.L_atom.index + 1
         self.Natom = self.L_atom.shape[0]
         return 0
+    
+    def pairwise_d_2(self, sel1, sel2=[] ): # pairwise distance squre
+        xyz1 = sel1[['x', 'y', 'z' ]].values
+        ## 1.  sel1 and sel2 both given (different set )
+        if len(sel2):
+            xyz2 = sel2[['x', 'y', 'z' ]].values
+            # separately x y z to avoid memory issues on bridges2 gpu node
+            dx = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+            dy = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+            dz = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+            pre_rows = 0
+            for i in range(0, xyz1.shape[0] ):
+                x1 = xyz1[i, 0]
+                y1 = xyz1[i, 1]
+                z1 = xyz1[i, 2]
+                raw_dx = xyz2[:, 0] - x1 # broadcast
+                raw_dy = xyz2[:, 1] - y1
+                raw_dz = xyz2[:, 2] - z1
+                #print(raw_vec.shape[0] )
+                dx[ pre_rows :  pre_rows +  raw_dx.shape[0]] = raw_dx
+                dy[ pre_rows :  pre_rows +  raw_dy.shape[0]] = raw_dy
+                dz[ pre_rows :  pre_rows +  raw_dz.shape[0]] = raw_dz
+                pre_rows += xyz2.shape[0]
+            pbc_dx = pbc_x(dx, self.deltaX)
+            pbc_dy = pbc_x(dy, self.deltaY)
+            pbc_dz = pbc_x(dz, self.deltaZ)
+        ## 2. only sel1 (same set)
+        else :
+            dx = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+            dy = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+            dz = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+            pre_rows = 0
+            for i in range(0, xyz1.shape[0] - 1 ):
+                x1 = xyz1[i, 0]
+                y1 = xyz1[i, 1]
+                z1 = xyz1[i, 2]
+                raw_dx = xyz1[i+1 :, 0] - x1 # broadcast
+                raw_dy = xyz1[i+1 :, 1] - y1
+                raw_dz = xyz1[i+1 :, 2] - z1
+                dx[ pre_rows :  pre_rows +  raw_dx.shape[0]] = raw_dx
+                dy[ pre_rows :  pre_rows +  raw_dy.shape[0]] = raw_dy
+                dz[ pre_rows :  pre_rows +  raw_dz.shape[0]] = raw_dz
+                pre_rows += xyz1[i+1 :].shape[0]
+            # convert to pbc vector
+            pbc_dx = pbc_x(dx, self.deltaX)
+            pbc_dy = pbc_x(dy, self.deltaY)
+            pbc_dz = pbc_x(dz, self.deltaZ)
+        dist_2 = pbc_dx**2 + pbc_dy**2 + pbc_dz**2
+        return dist_2
 
+    def inter_cont_list(self, factor = 1.12246204831, *args, **kwargs):
+        if args:
+            sel = args[0]
+        else:
+            sel = self.L_atom
+        L_mol = np.unique( sel['mol'] )
+        L_mol = np.sort(L_mol).astype(np.int16)
+        N_chain = L_mol.shape[0]
+        N_atom_per_chain = sel.shape[0] / N_chain
+        N_pair = int(   N_chain * ( N_chain - 1 ) / 2  * N_atom_per_chain**2    )
+        #print( 'all pairs: ', N_pair)
+        # res
+        # row 1: idx 1; row 2: idx 2; 
+        L_pair_idx1 = np.zeros( N_pair , dtype= np.int32 )
+        L_pair_idx2 = np.zeros( N_pair , dtype= np.int32 )
+        L_d_2       = np.zeros( N_pair , dtype= np.float32 )
+        L_dcut_2    = np.zeros( N_pair , dtype= np.float32 )
+        res1 = 0
+        res2 = 0
+        loc_pre = 0
+        for imol in range(0, L_mol.shape[0]-1) :
+            # select
+            mask1 = sel['mol'] == L_mol[imol]
+            mask2 = sel['mol'] >  L_mol[imol]
+            sel1 = sel[ mask1 ]
+            sel2 = sel[ mask2 ]
+            # build internal res index for sel1 sel2
+            in_idx1 = ( sel1.index - np.min( sel1.index) ).values
+            in_idx2 = np.tile(  in_idx1, N_chain-1-imol  )
+            # complete list of all pairs within sel1 sel2
+            L_idx1 = np.repeat( in_idx1 , in_idx2.shape[0] )
+            L_idx2 = np.tile(   in_idx2 , in_idx1.shape[0] )
+            # update this into res
+            #print(L_idx1.shape, L_idx2.shape )
+            L_pair_idx1[ loc_pre : loc_pre + L_idx1.shape[0] ]  =  L_idx1
+            L_pair_idx2[ loc_pre : loc_pre + L_idx2.shape[0] ]  =  L_idx2
+            # calc d_2 
+            d_2 = self.pairwise_d_2( sel1 , sel2 )
+            L_d_2      [ loc_pre : loc_pre + L_idx2.shape[0] ]  =  d_2
+            #
+
+            # calc d_cut ^ 2
+            # selected atoms must have 'd_cut'
+            # if not, set up 'd_cut' for each atom first
+            dcut_idx1 = sel1['dcut'].values
+            dcut_idx2 = sel2['dcut'].values
+            L_dcut_idx1 = np.repeat( dcut_idx1 , dcut_idx2.shape[0] )
+            L_dcut_idx2 = np.tile(   dcut_idx2 , dcut_idx1.shape[0] )
+            #Test: if dim of pair is correct
+            #if L_dcut_idx1.shape[0] != L_dcut_idx2.shape[0] :
+            #    print( 'error dim')
+            #    return -1
+            #else : print ( L_dcut_idx1.shape[0]   )
+            #
+            #
+            #mix rule, 2^(1/6) and square
+            dcut_2 = ( 0.5 * ( L_dcut_idx1 + L_dcut_idx2 ) * factor ) ** 2
+            L_dcut_2   [ loc_pre : loc_pre + L_dcut_idx2.shape[0] ]  =  dcut_2
+            # update previous loop idx locator in res
+            loc_pre += L_idx1.shape[0]
+
+        # contact numbers
+        mask_contact = L_d_2 < L_dcut_2
+
+        L_pair_idx1 = L_pair_idx1 [ mask_contact ]
+        L_pair_idx2 = L_pair_idx2 [ mask_contact ]
+        #print('contact pairs: ',  L_pair_idx1. shape )
+        return L_pair_idx1, L_pair_idx2, L_d_2 [ mask_contact ], L_dcut_2 [ mask_contact ]
+
+    def cont_list_to_map(self, L_cont):
+        pass
+        return M_cont
 
 if __name__ == '__main__':
     m = oneframe()

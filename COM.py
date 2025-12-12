@@ -11,7 +11,7 @@ def COM(atom_group, mapping_col = 'type'):
     mass_table = {'H':1.008, 'Li':6.94,'LI':6.94, 'B':10.81, 'C':12.011, 'N':14.007, 'O':15.999, 'F':18.998, 'Na':22.990, 'NA':22.990, 'Mg':4.305, 'MG':4.305,'Al':26.982, 'AL':26.982,'Si':28.085, 'SI':28.085, 'P':30.974, 'S':32.06, 'Cl':35.45, 'CL':35.45, 'K':39.098, 'Br':79.904, 'BR':79.904}
     
     # map the masses
-    masses = atom_group[mapping_col].str.replace('\d+', '').map(mass_table)
+    masses = atom_group[mapping_col].str.replace('\\d+', '').map(mass_table)
     total_mass = masses.sum()
     # COM
     we_ux = np.dot(atom_group['xu'] ,masses)/total_mass
