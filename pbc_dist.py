@@ -48,6 +48,17 @@ def pbc_vec(vec, deltaEdge):
     switch = np.abs(vec) > np.abs(vec_copy )
     vec[switch] = vec_copy[switch] # as pointer
 
+def pbc_x(x, edgeX):
+    res_x = np.copy(x)
+    x_copy = np.copy(x)
+    pos = x_copy > 0
+    neg = x_copy < 0
+    x_copy[pos] -= edgeX
+    x_copy[neg] += edgeX
+    switch = np.abs(x) > np.abs(x_copy )
+    res_x[switch] = x_copy[switch]
+    return res_x
+
 # to test:
 if __name__ == '__main__':
     boxlo = np.array([0.0,0.0,0.0])
