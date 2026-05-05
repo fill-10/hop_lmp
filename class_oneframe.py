@@ -642,7 +642,188 @@ class oneframe():
         self.L_atom['id'] = self.L_atom.index + 1
         self.Natom = self.L_atom.shape[0]
         return 0
+    
+    def pairwise_d_2(self, sel1, sel2 ): # pairwise distance square
+        xyz1 = sel1[['x', 'y', 'z' ]].values
+        xyz2 = sel2[['x', 'y', 'z' ]].values
+        # separately x y z to avoid memory issues on bridges2 gpu node
+        dx = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+        dy = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+        dz = np.zeros( int (xyz1.shape[0] *  xyz2.shape[0] ) , dtype=np.float32 )
+        pre_rows = 0
+        for i in range(0, xyz1.shape[0] ):
+            x1 = xyz1[i, 0]
+            y1 = xyz1[i, 1]
+            z1 = xyz1[i, 2]
+            raw_dx = xyz2[:, 0] - x1 # broadcast
+            raw_dy = xyz2[:, 1] - y1
+            raw_dz = xyz2[:, 2] - z1
+            #print(raw_vec.shape[0] )
+            dx[ pre_rows :  pre_rows +  raw_dx.shape[0]] = raw_dx
+            dy[ pre_rows :  pre_rows +  raw_dy.shape[0]] = raw_dy
+            dz[ pre_rows :  pre_rows +  raw_dz.shape[0]] = raw_dz
+            pre_rows += xyz2.shape[0]
+        pbc_dx = pbc_x(dx, self.deltaX)
+        pbc_dy = pbc_x(dy, self.deltaY)
+        pbc_dz = pbc_x(dz, self.deltaZ)
+        dist_2 = pbc_dx**2 + pbc_dy**2 + pbc_dz**2
+        return dist_2
 
+    def pairwise_d_2_s(self, sel1 ): # pairwise distance square self set
+        dx = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+        dy = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+        dz = np.zeros( int (xyz1.shape[0] * ( xyz1.shape[0] - 1 ) / 2 ),  dtype=np.float32 )
+        pre_rows = 0
+        for i in range(0, xyz1.shape[0] - 1 ):
+            x1 = xyz1[i, 0]
+            y1 = xyz1[i, 1]
+            z1 = xyz1[i, 2]
+            raw_dx = xyz1[i+1 :, 0] - x1 # broadcast
+            raw_dy = xyz1[i+1 :, 1] - y1
+            raw_dz = xyz1[i+1 :, 2] - z1
+            dx[ pre_rows :  pre_rows +  raw_dx.shape[0]] = raw_dx
+            dy[ pre_rows :  pre_rows +  raw_dy.shape[0]] = raw_dy
+            dz[ pre_rows :  pre_rows +  raw_dz.shape[0]] = raw_dz
+            pre_rows += xyz1[i+1 :].shape[0]
+        # convert to pbc vector
+        pbc_dx = pbc_x(dx, self.deltaX)
+        pbc_dy = pbc_x(dy, self.deltaY)
+        pbc_dz = pbc_x(dz, self.deltaZ)
+        dist_2 = pbc_dx**2 + pbc_dy**2 + pbc_dz**2
+        return dist_2
+
+    def inter_cont_list(self, factor = 1.12246204831, *args, **kwargs):
+        is_diff = False # default: same mol
+        if 'L_mol0' in kwargs :
+            L_mol0 = np.array( kwargs['L_mol0'] )
+        else :
+            L_mol0 = self.L_atom['mol']
+        L_mol0 = np.unique( L_mol0 )
+        L_mol0 = np.sort(L_mol0).astype(np.int32)
+        if 'L_mol1' in kwargs :
+            L_mol1 = np.array( kwargs['L_mol1'] )
+            L_mol1 = np.unique( L_mol1 )
+            L_mol1 = np.sort(L_mol1).astype(np.int32)
+            is_diff = True
+        sel=self.L_atom
+        N_chain0 = L_mol0.shape[0]
+        mask0 = sel['mol'].isin( L_mol0 )
+        sel0 = sel[mask0]
+        N_AperCh0 = int( sel0.shape[0] / N_chain0 )
+        if is_diff:
+            N_chain1 = L_mol1.shape[0]
+            mask1 = sel['mol'].isin( L_mol1 )
+            sel1 = sel[mask1] 
+            N_AperCh1 = int( sel1.shape[0] / N_chain1 )
+            N_pair = int(  N_chain0 * N_AperCh0 *  N_chain1 * N_AperCh1  )
+        else :
+            N_pair = int(  N_chain0 * ( N_chain0 - 1 ) / 2  * (N_AperCh0 ** 2) )
+        # organize result: 
+        # astype np.int8 to avoid mem problems
+        L_pair_idx0 = np.zeros( N_pair , dtype= np.int16 )
+        L_pair_idx1 = np.zeros( N_pair , dtype= np.int16 )
+        L_d_2       = np.zeros( N_pair , dtype= np.float32 )
+        L_dcut_2    = np.zeros( N_pair , dtype= np.float32 )
+
+        #
+        if is_diff:
+            mask0 = sel0['mol'] == L_mol0[0]
+            mask1 = sel1['mol'] == L_mol1[0]
+            in_sel0 = sel0[ mask0 ]
+            in_sel1 = sel1[ mask1 ]
+            in_idx0 = ( in_sel0.index - np.min( in_sel0.index) ).values\
+                    . astype(np.int16)
+            in_idx1 = ( in_sel1.index - np.min( in_sel1.index) ).values\
+                    . astype(np.int16)
+            til_idx0 = np.tile( in_idx0 , N_chain0 )
+            til_idx1 = np.tile( in_idx1 , N_chain1 )
+            L_idx0 = np.repeat( til_idx0 , N_chain1 * N_AperCh1 )
+            L_idx1 = np.tile(   til_idx1 , N_chain0 * N_AperCh0 )
+            # update this into res
+            L_pair_idx0[:] = L_idx0
+            L_pair_idx1[:] = L_idx1
+            # calc d_cut ^ 2
+            # selected atoms must have 'd_cut'
+            # if not, set up 'd_cut' for each atom first
+            loc_pre = 0
+            for imol in range(0, N_chain0 ) :
+                # calc d_2 
+                mask0 = sel0['mol'] == L_mol0[imol]
+                d_2 = self.pairwise_d_2( sel0[mask0] , sel1 ) 
+                # N of d_2 =  N_AperCh0 * N_AperCh1 * N_Chain1
+                L_d_2[ loc_pre : loc_pre + N_AperCh0 * N_AperCh1 * N_chain1] = d_2
+                dcut_imol = sel0[mask0]['dcut'].values
+                L_dcut_idx0 = np.repeat( dcut_imol , N_chain1 * N_AperCh1 )
+                L_dcut_idx1 = np.tile( sel1['dcut'] , N_AperCh0 )
+                #Test: if dim of pair is correct
+                #if L_dcut_idx0.shape[0] != L_dcut_idx1.shape[0] :
+                #    print( 'error dim')
+                #    return -1
+                #else : print ( L_dcut_idx1.shape[0]   )
+                #---
+                #mix rule, 2^(1/6) and square
+                dcut_2 = ( 0.5 * ( L_dcut_idx0 + L_dcut_idx1 ) * factor ) ** 2
+                N_cur = N_AperCh0 * N_AperCh1 * N_chain1
+                # Test:
+                #if N_cur != L_dcut_idx1.shape[0]:
+                #    print('error dim N_cur' )
+                L_dcut_2[ loc_pre : loc_pre + N_cur ]  =  dcut_2
+                loc_pre += N_cur
+
+        else : # is_diff = False
+            loc_pre = 0
+            for imol in range(0, N_chain0-1) :
+                # select
+                mask0 = sel0['mol'] == L_mol0[imol]
+                mask1 = sel0['mol'] >  L_mol0[imol]
+                in_sel0 = sel0[ mask0 ]
+                in_sel1 = sel0[ mask1 ]
+                # build internal index
+                in_idx0 = ( in_sel0.index - np.min( in_sel0.index) ).values\
+                        . astype(np.int16)
+                in_idx1 = np.tile(  in_idx0, N_chain0-1-imol  ).astype(np.int16)
+                # internal lindex list of all pairs
+                L_idx0 = np.repeat( in_idx0 , in_idx1.shape[0] )
+                L_idx1 = np.tile(   in_idx1 , in_idx0.shape[0] )
+                # update this into res
+                L_pair_idx0[ loc_pre : loc_pre + L_idx0.shape[0] ]  =  L_idx0
+                L_pair_idx1[ loc_pre : loc_pre + L_idx1.shape[0] ]  =  L_idx1
+                # calc d_2 
+                d_2 = self.pairwise_d_2( in_sel0 , in_sel1 )
+                L_d_2      [ loc_pre : loc_pre + L_idx1.shape[0] ]  =  d_2
+                #
+
+                # calc d_cut ^ 2
+                # selected atoms must have 'd_cut'
+                # if not, set up 'd_cut' for each atom first
+                dcut_idx0 = in_sel0['dcut'].values
+                dcut_idx1 = in_sel1['dcut'].values
+                L_dcut_idx0 = np.repeat( dcut_idx0 , dcut_idx1.shape[0] )
+                L_dcut_idx1 = np.tile(   dcut_idx1 , dcut_idx0.shape[0] )
+                #Test: if dim of pair is correct
+                #if L_dcut_idx0.shape[0] != L_dcut_idx1.shape[0] :
+                #    print( 'error dim')
+                #    return -1
+                #else : print ( L_dcut_idx1.shape[0]   )
+                #
+                #
+                #mix rule, 2^(1/6) and square
+                dcut_2 = ( 0.5 * ( L_dcut_idx0 + L_dcut_idx1 ) * factor ) ** 2
+                L_dcut_2   [ loc_pre : loc_pre + L_dcut_idx1.shape[0] ]  =  dcut_2
+                # update previous loop idx locator in res
+                loc_pre += L_idx1.shape[0]
+
+        # contact numbers
+        mask_contact = L_d_2 < L_dcut_2
+        L_pair_idx0 = L_pair_idx0 [ mask_contact ]
+        L_pair_idx1 = L_pair_idx1 [ mask_contact ]
+        #print( len(L_d_2[L_d_2>0]))
+        #print ('contact pairs: ',  L_pair_idx1. shape )
+        return L_pair_idx0, L_pair_idx1, L_d_2 [ mask_contact ], L_dcut_2 [ mask_contact ]
+
+    def sel_mol( self, L_mol):
+        mask = self.L_atom['mol'].isin( L_mol)
+        return self.L_atom[mask]
 
 if __name__ == '__main__':
     m = oneframe()
@@ -650,11 +831,4 @@ if __name__ == '__main__':
     b = pd.DataFrame([ [1,1,0], [0,-5.5,0]], columns =['xu', 'yu', 'zu'])
     s1 = pd.DataFrame([[0,0,0],[0,0,0]    ], columns =['xu', 'yu', 'zu'])
     s2 = pd.DataFrame([[0,0,2],[0,0,4.2]  ], columns =['xu', 'yu', 'zu'])
-    """
-    a = pd.DataFrame([ [1,0,0]  ], columns =['xu', 'yu', 'zu'])
-    b = pd.DataFrame([ [1,1,0]  ], columns =['xu', 'yu', 'zu'])
-    s1 = pd.DataFrame([[0,0,0]  ], columns =['xu', 'yu', 'zu'])
-    s2 = pd.DataFrame([[0,0,2]  ], columns =['xu', 'yu', 'zu'])
-    """
-
     print(  m.dihed_uw(a,s1,s2, b) )
