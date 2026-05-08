@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import pandas as pd
 import copy
-from util_ff import *
 from class_oneframe import *
 
 class data(object):
@@ -212,23 +211,23 @@ class data(object):
             if counter%(skip+1):
                 counter +=1
                 continue
-            if len(frame.L_AN) and not len(frame.L_CT):
+            if ( len(frame.L_AN) and not len(frame.L_CT) ):
                 df_sel = pd.concat( \
                 [ frame.L_AN.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True )
-            elif not len(frame.L_AN) and len(frame.L_CT):
+            elif ( not len(frame.L_AN) and len(frame.L_CT) ):
                 df_sel = pd.concat( \
                 [ frame.L_CT.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True )
-            elif len(frame.L_AN) and len(frame.L_CT):
+            elif ( len(frame.L_AN) and len(frame.L_CT) ):
                 df_sel = pd.concat( \
                 [ frame.L_AN.loc[:, col], \
                   frame.L_CT.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True  )
-            else:
+            else :
                 df_sel = frame.L_atom.loc[:,col]
             #
             frame.export_lmptrj( f, df_sel, col )
@@ -263,22 +262,22 @@ class data(object):
             if counter%(skip+1):
                 counter +=1
                 continue
-            if len(frame.L_AN) and not len(frame.L_CT):
+            if ( len(frame.L_AN) and not len(frame.L_CT) ):
                 frame.export_pdb(  f, \
                     pd.concat(  [ frame.L_AN.loc[:,col], \
                     frame.L_atom.loc[:,col] ], ignore_index=True  ) , counter+1 )
-            if not len(frame.L_AN) and len(frame.L_CT):
+            elif ( not len(frame.L_AN) and len(frame.L_CT) ):
                 frame.export_pdb(  f, \
                     pd.concat(  [ frame.L_CT.loc[:,col], \
                     frame.L_atom.loc[:,vol] ], ignore_index=True  ) , counter+1 )
-            if len(frame.L_AN) and len(frame.L_CT):
+            elif ( len(frame.L_AN) and len(frame.L_CT) ) :
                 frame.export_pdb(  f, \
                     pd.concat(  [ frame.L_AN.loc[:,col], \
                     frame.L_CT.loc[:,col],\
                     frame.L_atom.loc[:,col] ],\
                     ignore_index=True  ) , counter+1 )
-            else: # no AN and no CT
-                 frame.export_pdb(  f, \
+            else :
+                frame.export_pdb(  f, \
                     frame.L_atom.loc[:,col], counter+1 )
             counter += 1
     def export_all_gro(self, fn, skip=0 ):
@@ -289,23 +288,23 @@ class data(object):
             if counter%(skip+1):
                 counter +=1
                 continue
-            if len(frame.L_AN) and not len(frame.L_CT):
+            if ( len(frame.L_AN) and not len(frame.L_CT) ):
                 df_sel = pd.concat( \
                 [ frame.L_AN.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True )
-            elif not len(frame.L_AN) and len(frame.L_CT):
+            elif ( not len(frame.L_AN) and len(frame.L_CT) ) :
                 df_sel = pd.concat( \
                 [ frame.L_CT.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True )
-            elif len(frame.L_AN) and len(frame.L_CT):
+            elif ( len(frame.L_AN) and len(frame.L_CT) ) :
                 df_sel = pd.concat( \
                 [ frame.L_AN.loc[:, col], \
                   frame.L_CT.loc[:, col], \
                   frame.L_atom.loc[:, col] ], \
                 ignore_index=True  )
-            else:
+            else :
                 df_sel = frame.L_atom.loc[:,col]
             #
             frame.export_gro( f, df_sel )
@@ -884,6 +883,7 @@ class data(object):
                 print('Non-zero code for frame: ', frame.time )
     def gen_dcut(self, sel = None  , *args, **kwargs):
         if 'hps' in kwargs:
+            from util_ff import read_ff_file
             ff_file = kwargs['hps' ] 
             ff_atomwise = read_ff_file( ff_file )
             type_to_sig = ff_atomwise.copy()

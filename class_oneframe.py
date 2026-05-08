@@ -84,9 +84,9 @@ class oneframe():
             ##--- split them into independent ions
             for j in range(0,Deg_poly*ions_per_mono):
                 ##--- compute center of mass for each ion
-                ion_ux, ion_uy, ion_uz= COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], COM_map_col )
+                ion_com = COM( sel1.iloc[ j*Natom_ION : (j+1)*Natom_ION ], COM_map_col )
                 ##--- append this ion to the final list
-                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, i, iontype, ion_ux, ion_uy, ion_uz]  ]
+                L_ion += [  [ (  (i-L_molid[0] )*Deg_poly + j  ) * ions_per_mono + 1, i, iontype, ion_com[0], ion_com[1], ion_com[2] ]  ]
             del sel1
         
         ##--- convert the result into pandas dataframe
