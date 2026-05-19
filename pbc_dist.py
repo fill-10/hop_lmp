@@ -36,7 +36,9 @@ def pbc_vec(vec, deltaEdge):
     # vectorized 
     # vec = np.array([[x,y,z],[x,y,z],..])
     # for wrapped x y z
+    res_vec  = np.copy(vec) # result
     vec_copy = np.copy(vec)
+    #
     pos = vec_copy > 0
     neg = vec_copy < 0
     vec_copy[:,0][pos[:,0]] -= deltaEdge[0]
@@ -46,10 +48,11 @@ def pbc_vec(vec, deltaEdge):
     vec_copy[:,1][neg[:,1]] += deltaEdge[1]
     vec_copy[:,2][neg[:,2]] += deltaEdge[2]
     switch = np.abs(vec) > np.abs(vec_copy )
-    vec[switch] = vec_copy[switch] # as pointer
+    res_vec[switch] = vec_copy[switch]
+    return res_vec
 
 def pbc_x(x, edgeX):
-    res_x = np.copy(x)
+    res_x = np.copy(x) # result
     x_copy = np.copy(x)
     pos = x_copy > 0
     neg = x_copy < 0
