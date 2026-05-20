@@ -19,7 +19,6 @@ def prep_traj( fn_in,  L_Nchain=[], N_last = 110, N_every = 1 ):
     Nframe = len ( d0.allframes )
     print("number of frames: ", Nframe )
     #print(d2.allframes[-1].L_atom.shape)
-    
     # unwrap
     d0.unwrapall_L()
     
@@ -38,24 +37,48 @@ def prep_traj( fn_in,  L_Nchain=[], N_last = 110, N_every = 1 ):
         frame.xlo *= 10
         frame.ylo *= 10
         frame.zlo *= 10
+
+        #for vmd only, shift half box
+        frame.L_atom[ 'x' ] += frame.deltaX *0.5
+        frame.L_atom[ 'y' ] += frame.deltaY *0.5
+        frame.L_atom[ 'z' ] += frame.deltaZ *0.5
+
         # recover molid 
         col_mol = []
         acc_Nchain = 0
+        Nmol = 0
         for t_chain in L_Nchain: # iterate each type of mol
             Nchain = t_chain[0]
             NAperCh = t_chain[1]
+            Nmol += Nchain
             for i in range(acc_Nchain+0, acc_Nchain+Nchain):
                 col_mol += [ i+1 for j in range(0,  NAperCh ) ]
             acc_Nchain  += Nchain
         frame.L_atom['mol' ] = col_mol
+
+        # pbc whole
+        for i in range(0, Nmol):
+            molmask = frame.L_atom['mol'] == i + 1
+            for col in ['ix', 'iy', 'iz']:
+                ix_res = frame.L_atom.loc[molmask, col].values.copy()
+                #idx_center =  np.argmin( np.abs(ix_res))
+                idx_center =  int ( ix_res.shape[0]/2 ) # middle atom
+                val_min_abs =  ix_res[ idx_center ] # + -
+                ix_res -= val_min_abs
+                frame.L_atom.loc[molmask, col] =  ix_res
+
         # recover atom id
         frame.L_atom['id'] = frame.L_atom.index + 1
         # Do not drop rigid body center of mass
         #mask = ~frame.L_atom['type'].str.contains( 'rbody' )
+        
+        # pbc whole
+        for i in range(0, Nmol):
+            molmask = frame.L_atom['mol'] == i + 1
 
     return d0
 
-def find_stack( d1, L_Nchain=[]):
+def find_stack( d1, fn_out, L_Nchain=[] ):
     for frame in d1.allframes:
         # collect COM for each stack
         com_mask = frame.L_atom['type'].str.contains( 'rbody' )
@@ -102,35 +125,39 @@ def find_stack( d1, L_Nchain=[]):
         # save all pc0 and pc2 xyz in L_AN
         frame.L_AN.loc[ :, ['pc0x', 'pc0y', 'pc0z'] ] = L_pc0
         frame.L_AN.loc[ :, ['pc2x', 'pc2y', 'pc2z'] ] = L_pc2
-        frame.L_AN = frame.L_AN[['x', 'y', 'z', 'pc0x', 'pc0y', 'pc0z', 'pc2x', 'pc2y', 'pc2z']]
+        frame.L_AN = frame.L_AN[['id', 'type', 'mol', 'x', 'y', 'z', 'ix', 'iy', 'iz', 'pc0x', 'pc0y', 'pc0z', 'pc2x', 'pc2y', 'pc2z']]
         # delete useless L_atom
-        # frame.L_atom = [ ]
+        frame.L_atom = pd.DataFrame(columns=['id', 'type', 'mol', 'x', 'y', 'z', 'ix', 'iy', 'iz'] )
     
     ###--- pairwise contact map for rbody ---###
     Nrbody = frame.L_AN.shape[0]
-    print( Nrbody)
+    #print( Nrbody)
     for frame in d1.allframes:
         dist_mat = np.zeros( [Nrbody, Nrbody] , dtype = float )
         pc0_mat = np.zeros( [Nrbody, Nrbody] , dtype = float )
         pc2_mat = np.zeros( [Nrbody, Nrbody] , dtype = float )
         for idx , row in frame.L_AN.iterrows():
+            # dist criterion
             ref_com = row[['x', 'y', 'z']].values
             L_vec = frame.L_AN[ ['x', 'y', 'z'] ] - ref_com 
             # pbc dist for com
             L_vec = pbc_vec( L_vec, [frame.deltaX, frame.deltaY, frame.deltaZ] ) 
-            L_norm = np.linalg.norm( L_vec, axis = 1 ) # dist
+            L_norm = np.linalg.norm( L_vec.astype(np.float32), axis = 1 ) # dist
             dist_mat[idx, :] = L_norm
-            #ref_pc0 = row[['pc0x', 'pc0y', 'pc0z']].values
-            #ref_pc2 = row[['pc2x', 'pc2y', 'pc2z']].values
-            #pc0_mat[i]  = frame.L_AN[ ['pc0x', 'pc0y', 'pc0z'] ] - ref_pc0
-            #pc2_mat[i]  = frame.L_AN[ ['pc2x', 'pc2y', 'pc2z'] ] - ref_pc2
-        print(np.min(dist_mat[dist_mat>0.01]) )
+            #
+            # angle criterion
+            ref_pc0 = row[['pc0x', 'pc0y', 'pc0z']].values
+            ref_pc2 = row[['pc2x', 'pc2y', 'pc2z']].values
+            pc0_mat[idx , : ]  = np.abs( np.dot( frame.L_AN[ ['pc0x', 'pc0y', 'pc0z'] ] , ref_pc0 ) )
+            pc2_mat[idx , : ]  = np.abs( np.dot( frame.L_AN[ ['pc2x', 'pc2y', 'pc2z'] ] , ref_pc2 ) )
+        #print(np.min(dist_mat[dist_mat>0.01]) )
+        #print(pc0_mat)
         cmap_bin =  (
-            ( dist_mat < 10.0 )  
-                ).astype(int)
-            #(pc0_mat > pc0_cut ) & 
-            #( pc2_mat > pc2_cut)
-        print(cmap_bin)
+            ( dist_mat < 10.0 )   &
+            ( pc0_mat > 0.9396 ) & 
+            ( pc2_mat > 0.9659 )
+                ).astype(int)  # cos(20) = 0.9396 cos(15)=0.9659
+        #print(cmap_bin)
 
         num_clusters, labels = connected_components (
             csgraph = cmap_bin  ,
@@ -138,35 +165,23 @@ def find_stack( d1, L_Nchain=[]):
             return_labels = True , 
                                                     )
         frame.L_AN['mol'] = labels
-        print(frame.L_AN[['mol'] ] )
+        #print(frame.L_AN['mol'] )
+    # export
+    d1.export_all_lmptrj(fn_out)
     return 0
 
-    """
-    print(d2.allframes[-1].L_atom[d2.allframes[-1].L_atom['mol']==1].shape)
-    mol0 = [ i for i in range(1, 1 + L_Nchain[0][0] ) ]
-    if len ( L_Nchain ) > 1: # two types of mol, is_diff=True
-        mol1 = [ i for i in range(1 + L_Nchain[0][0], 1 + L_Nchain[0][0] + L_Nchain[1][0] ) ]
-        H, x, y = d1.contact_map(L_mol0=mol0, L_mol1=mol1)
-    else :
-        print('same mol type')
-        H, x, y = d1.contact_map(L_mol0=mol0) # same type
-
-    #H = H / Nframe / Nchain # normalize
     #save 
-    np.savetxt( fn_out_pre + '_H.txt', H, fmt='%.6f' )
-    np.savetxt( fn_out_pre + '_x.txt', x, fmt='%d' )
-    np.savetxt( fn_out_pre + '_y.txt', y, fmt='%d' )
-    """
+    #np.savetxt( fn_out_pre + '_H.txt', H, fmt='%.6f' )
 
 if __name__ == '__main__' :
     import time as timer
     start = timer.perf_counter()
     #d1.read_all_lmp( 'rigid_slab.dump')
     #L_fn_in = [ f'../2rigid_beta_only_3pb/rigid_slab{i}_uconn.gsd' for i in range(0,8) ]
-    fn_in = '../pure_v2/rigid_slab0.gsd'
-    fn_out_pre = '../pure_v2/stack_'
-    d_traj = prep_traj( fn_in, [[100, 148+1]], 2 , 1)
-    _ = find_stack(d_traj, [[100, 148+1]] )
+    fn_in = '../pure_v2/rigid_slab1.gsd'
+    fn_out = '../pure_v2/trj_slab1_stack.dump'
+    d_traj = prep_traj( fn_in, [[100, 148+1]], 1300 , 1)
+    _ = find_stack(d_traj, fn_out,  [[100, 148+1]] )
     stop  = timer.perf_counter()
     print('time used in sec: ', stop - start )
 
