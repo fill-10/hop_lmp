@@ -821,14 +821,52 @@ class oneframe():
         #print ('contact pairs: ',  L_pair_idx1. shape )
         return L_pair_idx0, L_pair_idx1, L_d_2 [ mask_contact ], L_dcut_2 [ mask_contact ]
 
+    def com_remove(self): # for L_atom , wrapped xyz
+        xyz = self.L_atom[['x', 'y', 'z']].values
+        masses = self.L_atom['mass'].values
+        # com  [x, y, z]
+        com = np.average( xyz, axis =0,
+            weights = masses )
+        xyz = xyz - com # broadcasting
+        # update L_atom
+        self.L_atom[['x', 'y', 'z'] ]= xyz
+        # return com
+        return com
+    def density_distr(self, sel ,bin_min, bin_max, bin_width = 1., dim = 2 ):
+        # read xyz, wrapped
+        xyz = sel[ ['x', 'y', 'z'] ].values
+        x = xyz[:, dim] # x can be x, y or z direction
+        # read masses
+        if 'mass' in sel.columns:
+            masses =  sel['mass']
+        else :
+            masses = np.ones( len(xyz) )
+        # cross section area
+        if dim  == 0 : # x
+            cross_area = self.deltaY * self.deltaZ
+            box_edge = self.deltaX
+        elif dim == 1 : #y
+            cross_area = self.deltaX * self.deltaZ
+            box_edge = self.deltaY
+        elif dim == 2 : #z
+            cross_area = self.deltaX * self.deltaY
+            box_edge = self.deltaZ
+        else :
+            return -1
+        # def bin, bin_max + bin is enough for the upper boundary
+        bins = np.arange( bin_min, bin_max + bin_width , bin_width)
+        # volume of bin slice
+        bin_vol = cross_area * bin_width
+        # histo, weights = masses
+        rho , bins = np.histogram( x, bins = bins , weights = masses )
+        # divide by bin volume
+        rho = rho / bin_vol
+        bin_centers = bins[:-1] + 0.5 * bin_width
+        return rho, bin_centers
+
     def sel_mol( self, L_mol):
         mask = self.L_atom['mol'].isin( L_mol)
         return self.L_atom[mask]
 
 if __name__ == '__main__':
-    m = oneframe()
-    a = pd.DataFrame([ [1,0,0], [2,0,0]   ], columns =['xu', 'yu', 'zu'])
-    b = pd.DataFrame([ [1,1,0], [0,-5.5,0]], columns =['xu', 'yu', 'zu'])
-    s1 = pd.DataFrame([[0,0,0],[0,0,0]    ], columns =['xu', 'yu', 'zu'])
-    s2 = pd.DataFrame([[0,0,2],[0,0,4.2]  ], columns =['xu', 'yu', 'zu'])
-    print(  m.dihed_uw(a,s1,s2, b) )
+    pass

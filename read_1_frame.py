@@ -166,6 +166,7 @@ def read_1_gsd(frame):
     xyz = frame.particles.position
     ixyz = frame.particles.image
     box = frame.configuration.box
+    masses = frame.particles.mass
     item_box = box[: 3 ] # only dx dy dz
     item_time = frame.configuration.step
     atomtype = [ frame.particles.types[i] \
@@ -173,7 +174,7 @@ def read_1_gsd(frame):
     Natom = frame.particles.N
     q = frame.particles.charge
     col_dict = ['type', 'q', 'x', 'y', 'z','ix', 'iy', 'iz']
-    return item_time, Natom, item_box, col_dict, atomtype, q, xyz, ixyz # do not mess up data type
+    return item_time, Natom, item_box, col_dict, atomtype, q, xyz, ixyz, masses # do not mess up data type
 
 
 if __name__ == '__main__' :
