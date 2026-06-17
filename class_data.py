@@ -114,11 +114,11 @@ class data(object):
                 break
         f.close()
     
-    def read_all_gsd(self, filename, *args, **kwargs):
+    def read_all_gsd(self, filename, is_mass = False, *args, **kwargs):
         import gsd.hoomd
         traj = gsd.hoomd.open(filename, 'r')
         for frame in traj:
-            timestep, Natom, box, col, atomtype, q, xyz, ixyz = read_1_gsd(frame)
+            timestep, Natom, box, col, atomtype, q, xyz, ixyz, masses = read_1_gsd(frame)
             onef = oneframe()
             onef.time = timestep
             onef.Natom = Natom
@@ -139,6 +139,8 @@ class data(object):
             onef.L_atom['iz'] = ixyz[:, 2]
             onef.L_atom['q'] = q
             onef.L_atom['type'] = atomtype
+            if is_mass == True :
+                onef.L_atom['mass'] = masses
             self.allframes += [ onef ]
 
     def AN_CT_gen(self, L_anion_kw, L_cation_kw):
@@ -202,36 +204,32 @@ class data(object):
                     ignore_index=True ) , col )
             counter += 1
         f.close()
-    def export_all_lmptrj(self, fn, skip=0, col = \
+    def export_all_lmptrj(self, fn, col = \
             ['id', 'mol', 'type', 'x', 'y', 'z', 'ix', 'iy', 'iz'] ) :
         # vmd can only read unwrapped lmptrj 
-        counter = 0
         f = open(fn, 'w')
         for frame in self.allframes:
-            if counter%(skip+1):
-                counter +=1
-                continue
-            if ( len(frame.L_AN) and not len(frame.L_CT) ):
-                df_sel = pd.concat( \
-                [ frame.L_AN.loc[:, col], \
-                  frame.L_atom.loc[:, col] ], \
-                ignore_index=True )
-            elif ( not len(frame.L_AN) and len(frame.L_CT) ):
-                df_sel = pd.concat( \
-                [ frame.L_CT.loc[:, col], \
-                  frame.L_atom.loc[:, col] ], \
-                ignore_index=True )
-            elif ( len(frame.L_AN) and len(frame.L_CT) ):
-                df_sel = pd.concat( \
-                [ frame.L_AN.loc[:, col], \
-                  frame.L_CT.loc[:, col], \
-                  frame.L_atom.loc[:, col] ], \
-                ignore_index=True  )
-            else :
-                df_sel = frame.L_atom.loc[:,col]
+            df_sel = pd.DataFrame(columns = col)
+            if len(frame.L_AN):
+                df_sel = pd.concat(
+                    [   df_sel,
+                        frame.L_AN.loc[:, col]  ],
+                    ignore_index=True
+                )
+            if len(frame.L_CT):
+                df_sel = pd.concat(
+                    [   df_sel,
+                        frame.L_CT.loc[:, col]  ],
+                    ignore_index=True
+                )
+            if len(frame.L_atom) :
+                df_sel = pd.concat(
+                    [   df_sel,
+                        frame.L_atom.loc[:, col]  ],
+                    ignore_index=True
+                )
             #
             frame.export_lmptrj( f, df_sel, col )
-            counter += 1
         f.close()
     
     def export_ions_pdb(self, fn, skip=0):
@@ -930,3 +928,21 @@ class data(object):
         # pay attention to which is x and which is y
         H, xedges, yedges = np.histogram2d( L_pair_x, L_pair_y, bins = [  bins_x, bins_y ] )
         return H, xedges, yedges
+    def com_remove(self):
+        for frame in self.allframes:
+            _ = frame.com_remove()
+    def density_map_AN(self, bin_min, bin_max, bin_width, dim = 2):
+        #set up bin
+        bins = np.arange( bin_min, bin_max + bin_width , bin_width)
+        # res
+        bin_centers = bins[:-1] + 0.5 * bin_width
+        res = [] # to add up results
+
+        # loop over frames
+        for frame in self.allframes:
+            hist, _ = frame.density_distr( frame.L_AN, bin_min, bin_max, bin_width, dim )
+            # hist is a 1D numpy array 
+            res.append(hist)
+        res = np.sum ( res, axis = 0 ) # sum over each column
+        res = res / len(self.allframes) # divide by num of frames
+        return res, bin_centers
