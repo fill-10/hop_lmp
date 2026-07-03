@@ -1,4 +1,4 @@
-# hop_lmp
+# Post-processing tool for simulation trajectory
 
 This package is a little tool to handle gromacs/lammps/pdb trajectory files, with pandas and numpy. This allows: 
 1. Straight-forward and easy manipulation of atoms, selecting by residue name, atom name, id, x, y, z, etc, within pandas data frame;
