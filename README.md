@@ -6,14 +6,14 @@ This package is a little tool to handle gromacs/lammps/pdb trajectory files, wit
 
 This package can be used to:
 1. reads and export lammps trj, gro and pdb (unwrapped gro and pbc) into/from pandas data frame (only orthogonal box),
-2. generates ions by centers of mass.
+2. generates ions/particles by centers of mass.
 3. calculates association of the counterions (AN) and categorizes hopping types of the counterions (AN).
 4. calcualtes non gaussian parameter and mean square displacement for AN. 
 5. calculates van hove function and distribution of string like motions for AN.
 6. calculates continous time autocorrelation function, intermittent time autocorrelation function, tau_c and tau_s.
 7. Fs(q,t) and tau_q
-8. saves trj in lammps format
-9. way more things to do!
+8. contact map
+9. more things
 
 Not completed yet but already useful.
 
